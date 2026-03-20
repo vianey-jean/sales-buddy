@@ -95,9 +95,12 @@ const LiveChatAdmin: React.FC = () => {
   const eventSourceRef = useRef<EventSource | null>(null);
   
   const selectedConvRef = useRef<string | null>(null);
+  const selectedAdminRef = useRef<string | null>(null);
   const messagesRef = useRef<ChatMessage[]>([]);
+  const adminTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { selectedConvRef.current = selectedConv; }, [selectedConv]);
+  useEffect(() => { selectedAdminRef.current = selectedAdmin; }, [selectedAdmin]);
   useEffect(() => { messagesRef.current = messages; }, [messages]);
 
   const isAdmin = user?.role === 'administrateur' || user?.role === 'administrateur principale';
