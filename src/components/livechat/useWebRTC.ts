@@ -25,6 +25,7 @@ interface CallInfo {
   receiverType: 'visitor' | 'admin';
   receiverId: string;
   receiverName: string;
+  sdp?: string;
 }
 
 interface UseWebRTCProps {
@@ -53,20 +54,31 @@ export function useWebRTC({ myId, myName, myType, authHeaders }: UseWebRTCProps)
   const iceCandidateBufferRef = useRef<RTCIceCandidateInit[]>([]);
   const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const callStateRef = useRef<CallState>('idle');
+  const incomingCallRef = useRef<CallInfo | null>(null);
+  const authHeadersRef = useRef(authHeaders);
+  // Store target info for endCall
+  const callTargetRef = useRef<{ type: string; id: string } | null>(null);
 
   useEffect(() => { callStateRef.current = callState; }, [callState]);
+  useEffect(() => { incomingCallRef.current = incomingCall; }, [incomingCall]);
+  useEffect(() => { authHeadersRef.current = authHeaders; }, [authHeaders]);
 
   const sendSignal = useCallback(async (signal: any) => {
     try {
+      const headers = authHeadersRef.current || { 'Content-Type': 'application/json' };
+      // Ensure Content-Type is always set
+      if (!headers['Content-Type']) {
+        headers['Content-Type'] = 'application/json';
+      }
       await fetch(`${API_BASE}/api/messagerie/call-signal`, {
         method: 'POST',
-        headers: authHeaders || { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(signal),
       });
     } catch (e) {
       console.error('Error sending signal:', e);
     }
-  }, [authHeaders]);
+  }, []);
 
   const startTimer = useCallback(() => {
     setCallDuration(0);
@@ -95,6 +107,7 @@ export function useWebRTC({ myId, myName, myType, authHeaders }: UseWebRTCProps)
     if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
     iceCandidateBufferRef.current = [];
     currentCallIdRef.current = null;
+    callTargetRef.current = null;
     setCallState('idle');
     setCallDirection(null);
     setCallType(null);
@@ -108,6 +121,7 @@ export function useWebRTC({ myId, myName, myType, authHeaders }: UseWebRTCProps)
   const createPeerConnection = useCallback((callId: string, targetType: 'visitor' | 'admin', targetId: string) => {
     const pc = new RTCPeerConnection(ICE_SERVERS);
     pcRef.current = pc;
+    callTargetRef.current = { type: targetType, id: targetId };
 
     pc.onicecandidate = (event) => {
       if (event.candidate) {
@@ -139,13 +153,26 @@ export function useWebRTC({ myId, myName, myType, authHeaders }: UseWebRTCProps)
       }
       if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'closed') {
         if (callStateRef.current === 'connected' || callStateRef.current === 'calling' || callStateRef.current === 'ringing') {
-          endCall(callId, targetType, targetId);
+          // Use refs to avoid stale closures
+          const cId = currentCallIdRef.current;
+          const target = callTargetRef.current;
+          if (cId && target) {
+            sendSignal({
+              type: 'hangup',
+              callId: cId,
+              fromType: myType,
+              fromId: myId,
+              toType: target.type,
+              toId: target.id,
+            });
+          }
+          cleanup();
         }
       }
     };
 
     return pc;
-  }, [myType, myId, sendSignal, startTimer]);
+  }, [myType, myId, sendSignal, startTimer, cleanup]);
 
   const startCall = useCallback(async (targetType: 'visitor' | 'admin', targetId: string, targetName: string, type: CallType) => {
     if (callStateRef.current !== 'idle') return;
@@ -189,9 +216,10 @@ export function useWebRTC({ myId, myName, myType, authHeaders }: UseWebRTCProps)
   }, [myType, myId, myName, createPeerConnection, sendSignal, cleanup]);
 
   const answerCall = useCallback(async () => {
-    if (!incomingCall) return;
+    const call = incomingCallRef.current;
+    if (!call) return;
 
-    const { callId, callType: cType, callerType, callerId, callerName } = incomingCall;
+    const { callId, callType: cType, callerType, callerId, callerName, sdp: offerSdp } = call;
     currentCallIdRef.current = callId;
     setCallType(cType);
     setCallDirection('incoming');
@@ -209,8 +237,7 @@ export function useWebRTC({ myId, myName, myType, authHeaders }: UseWebRTCProps)
       const pc = createPeerConnection(callId, callerType, callerId);
       stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
-      // Set remote description from the offer stored in incomingCall
-      const offerSdp = (incomingCall as any).sdp;
+      // Set remote description from the offer
       if (offerSdp) {
         await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: offerSdp }));
       }
@@ -239,28 +266,31 @@ export function useWebRTC({ myId, myName, myType, authHeaders }: UseWebRTCProps)
       console.error('Error answering call:', e);
       cleanup();
     }
-  }, [incomingCall, myType, myId, createPeerConnection, sendSignal, cleanup]);
+  }, [myType, myId, createPeerConnection, sendSignal, cleanup]);
 
   const rejectCall = useCallback(async () => {
-    if (!incomingCall) return;
+    const call = incomingCallRef.current;
+    if (!call) return;
     await sendSignal({
       type: 'reject',
-      callId: incomingCall.callId,
+      callId: call.callId,
       fromType: myType,
       fromId: myId,
-      toType: incomingCall.callerType,
-      toId: incomingCall.callerId,
+      toType: call.callerType,
+      toId: call.callerId,
     });
     setIncomingCall(null);
     cleanup();
-  }, [incomingCall, myType, myId, sendSignal, cleanup]);
+  }, [myType, myId, sendSignal, cleanup]);
 
-  const endCall = useCallback(async (callId?: string, targetType?: string, targetId?: string) => {
-    const cId = callId || currentCallIdRef.current;
+  const endCall = useCallback(async () => {
+    const cId = currentCallIdRef.current;
+    const target = callTargetRef.current;
+    const call = incomingCallRef.current;
+    
     if (cId) {
-      // Determine target from incomingCall or from args
-      const tType = targetType || incomingCall?.callerType;
-      const tId = targetId || incomingCall?.callerId;
+      const tType = target?.type || call?.callerType;
+      const tId = target?.id || call?.callerId;
       if (tType && tId) {
         sendSignal({
           type: 'hangup',
@@ -273,7 +303,7 @@ export function useWebRTC({ myId, myName, myType, authHeaders }: UseWebRTCProps)
       }
     }
     cleanup();
-  }, [myType, myId, incomingCall, sendSignal, cleanup]);
+  }, [myType, myId, sendSignal, cleanup]);
 
   const toggleMute = useCallback(() => {
     const stream = localStreamRef.current;
@@ -293,42 +323,46 @@ export function useWebRTC({ myId, myName, myType, authHeaders }: UseWebRTCProps)
 
   // Handle incoming signaling events
   const handleSignal = useCallback(async (signal: any) => {
-    if (signal.type === 'offer') {
-      // Incoming call
-      const callInfo: CallInfo & { sdp: string } = {
-        callId: signal.callId,
-        callType: signal.callType,
-        callerType: signal.fromType,
-        callerId: signal.fromId,
-        callerName: signal.fromName,
-        receiverType: myType,
-        receiverId: myId,
-        receiverName: myName,
-        sdp: signal.sdp,
-      };
-      setIncomingCall(callInfo);
-      setRemoteCallerName(signal.fromName);
-    } else if (signal.type === 'answer') {
-      const pc = pcRef.current;
-      if (pc && pc.signalingState === 'have-local-offer') {
-        await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: signal.sdp }));
-        // Process buffered ICE candidates
-        for (const candidate of iceCandidateBufferRef.current) {
-          try { await pc.addIceCandidate(new RTCIceCandidate(candidate)); } catch {}
+    try {
+      if (signal.type === 'offer') {
+        // Incoming call
+        const callInfo: CallInfo = {
+          callId: signal.callId,
+          callType: signal.callType,
+          callerType: signal.fromType,
+          callerId: signal.fromId,
+          callerName: signal.fromName,
+          receiverType: myType,
+          receiverId: myId,
+          receiverName: myName,
+          sdp: signal.sdp,
+        };
+        setIncomingCall(callInfo);
+        setRemoteCallerName(signal.fromName);
+      } else if (signal.type === 'answer') {
+        const pc = pcRef.current;
+        if (pc && pc.signalingState === 'have-local-offer') {
+          await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: signal.sdp }));
+          // Process buffered ICE candidates
+          for (const candidate of iceCandidateBufferRef.current) {
+            try { await pc.addIceCandidate(new RTCIceCandidate(candidate)); } catch {}
+          }
+          iceCandidateBufferRef.current = [];
         }
-        iceCandidateBufferRef.current = [];
+      } else if (signal.type === 'ice-candidate') {
+        const pc = pcRef.current;
+        if (pc && pc.remoteDescription) {
+          try { await pc.addIceCandidate(new RTCIceCandidate(signal.candidate)); } catch {}
+        } else {
+          iceCandidateBufferRef.current.push(signal.candidate);
+        }
+      } else if (signal.type === 'hangup') {
+        cleanup();
+      } else if (signal.type === 'reject') {
+        cleanup();
       }
-    } else if (signal.type === 'ice-candidate') {
-      const pc = pcRef.current;
-      if (pc && pc.remoteDescription) {
-        try { await pc.addIceCandidate(new RTCIceCandidate(signal.candidate)); } catch {}
-      } else {
-        iceCandidateBufferRef.current.push(signal.candidate);
-      }
-    } else if (signal.type === 'hangup') {
-      cleanup();
-    } else if (signal.type === 'reject') {
-      cleanup();
+    } catch (e) {
+      console.error('Error handling signal:', e);
     }
   }, [myType, myId, myName, cleanup]);
 
