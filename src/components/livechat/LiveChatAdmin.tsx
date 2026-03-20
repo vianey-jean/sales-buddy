@@ -498,16 +498,6 @@ const LiveChatAdmin: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-1">
-          {selectedConv && (
-            <>
-              <button onClick={() => webrtc.startCall('audio')} className="p-2 hover:bg-white/10 rounded-lg transition-colors" title="Appel audio">
-                <Phone className="h-4 w-4 text-white" />
-              </button>
-              <button onClick={() => webrtc.startCall('video')} className="p-2 hover:bg-white/10 rounded-lg transition-colors" title="Appel vidéo">
-                <Video className="h-4 w-4 text-white" />
-              </button>
-            </>
-          )}
           <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
             <X className="h-4 w-4 text-white" />
           </button>
