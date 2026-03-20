@@ -386,7 +386,23 @@ router.post('/typing', (req, res) => {
 });
 
 // =====================
-// Mark messages as read
+// Admin-to-Admin Typing indicator
+// =====================
+router.post('/admin-typing', (req, res) => {
+  const { senderId, receiverId, isTyping } = req.body;
+  if (!senderId || !receiverId) return res.status(400).json({ message: 'Champs obligatoires manquants' });
+  
+  sseClients.forEach((client) => {
+    if (client.adminId === receiverId || client.adminId === senderId) {
+      try {
+        client.res.write(`event: admin_typing\ndata: ${JSON.stringify({ senderId, receiverId, isTyping })}\n\n`);
+      } catch (e) {}
+    }
+  });
+  res.json({ ok: true });
+});
+
+// =====================
 // =====================
 router.put('/mark-read/:visitorId/:adminId', (req, res) => {
   try {
