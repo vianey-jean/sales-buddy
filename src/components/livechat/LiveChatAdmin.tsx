@@ -427,6 +427,14 @@ const LiveChatAdmin: React.FC = () => {
     }).catch(() => {});
   };
 
+  const sendAdminTypingIndicator = (isTyping: boolean) => {
+    if (!selectedAdmin || !user) return;
+    fetch(`${API_BASE}/api/messagerie/admin-typing`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ senderId: user.id, receiverId: selectedAdmin, isTyping })
+    }).catch(() => {});
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
     if (activeTab === 'visitors' && selectedConv) {
@@ -434,10 +442,11 @@ const LiveChatAdmin: React.FC = () => {
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       typingTimeoutRef.current = setTimeout(() => sendTypingIndicator(false), 2000);
     }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+    if (activeTab === 'admins' && selectedAdmin) {
+      sendAdminTypingIndicator(true);
+      if (adminTypingTimeoutRef.current) clearTimeout(adminTypingTimeoutRef.current);
+      adminTypingTimeoutRef.current = setTimeout(() => sendAdminTypingIndicator(false), 2000);
+    }
   };
 
   if (!isAuthenticated || !isAdmin) return null;
