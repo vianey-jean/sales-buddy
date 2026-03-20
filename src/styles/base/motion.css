@@ -1,0 +1,24 @@
+
+/* Mode mouvement réduit */
+.reduced-motion * {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Animations accessibles */
+@keyframes accessible-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.accessible-spinner {
+  animation: accessible-spin 1s linear infinite;
+}
+
+.reduced-motion .accessible-spinner {
+  animation: none;
+  opacity: 0.6;
+}

@@ -1,0 +1,21 @@
+
+/* Amélioration des formulaires */
+.form-field {
+  margin-bottom: 1rem;
+}
+
+.form-field label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-weight: 500;
+}
+
+.form-field input:invalid {
+  border-color: #d32f2f;
+}
+
+.form-field .error-message {
+  color: #d32f2f;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}

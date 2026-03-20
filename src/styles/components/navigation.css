@@ -1,0 +1,27 @@
+
+/* Navigation au clavier améliorée */
+.keyboard-nav button:focus,
+.keyboard-nav a:focus,
+.keyboard-nav input:focus,
+.keyboard-nav textarea:focus,
+.keyboard-nav select:focus {
+  outline: 3px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+/* Skip links */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  padding: 8px;
+  text-decoration: none;
+  border-radius: 4px;
+  z-index: 9999;
+}
+
+.skip-link:focus {
+  top: 6px;
+}

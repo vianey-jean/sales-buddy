@@ -1,0 +1,111 @@
+
+/* Styles d'accessibilité modulaires pour WCAG 2.1 AA */
+@import './base/contrast.css';
+@import './base/typography.css';
+@import './base/motion.css';
+@import './components/forms.css';
+@import './components/navigation.css';
+@import './utilities/screen-reader.css';
+
+/* Mode lecteur d'écran */
+.screen-reader-mode button,
+.screen-reader-mode a,
+.screen-reader-mode input,
+.screen-reader-mode textarea,
+.screen-reader-mode select {
+  min-height: 44px !important;
+  min-width: 44px !important;
+}
+
+/* Amélioration des focus indicators */
+.focus-visible:focus {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+/* Amélioration des contrastes pour les erreurs */
+.error-text {
+  color: #d32f2f;
+  font-weight: 600;
+}
+
+.dark .error-text {
+  color: #f87171;
+}
+
+/* Amélioration des tooltips */
+[role="tooltip"] {
+  background: hsl(var(--popover));
+  color: hsl(var(--popover-foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.875rem;
+  max-width: 250px;
+  z-index: 1000;
+}
+
+/* Amélioration des tableaux */
+table {
+  border-collapse: collapse;
+}
+
+th {
+  text-align: left;
+  font-weight: 600;
+  background: hsl(var(--muted));
+}
+
+th, td {
+  padding: 12px;
+  border: 1px solid hsl(var(--border));
+}
+
+tr:nth-child(even) {
+  background: hsl(var(--muted) / 0.3);
+}
+
+tr:hover {
+  background: hsl(var(--muted) / 0.5);
+}
+
+/* Amélioration des modales */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 1000;
+}
+
+.modal-content {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: hsl(var(--background));
+  border-radius: 8px;
+  padding: 24px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: auto;
+  z-index: 1001;
+}
+
+/* Print styles pour l'accessibilité */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-only {
+    display: block !important;
+  }
+  
+  a[href]:after {
+    content: " (" attr(href) ")";
+  }
+  
+  abbr[title]:after {
+    content: " (" attr(title) ")";
+  }
+}

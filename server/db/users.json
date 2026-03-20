@@ -1,0 +1,14 @@
+[
+  {
+    "id": "1",
+    "email": "vianey.jean@ymail.com",
+    "password": "$2b$10$956HCTCjoyTXaBg844AlkuxqEOFhxkAm9Rrb6X3IT4MeKkUX3yr12",
+    "firstName": "RABEMANALINA",
+    "lastName": "Jean Marie Vianey",
+    "gender": "male",
+    "address": "10 Allée des Beryls bleus Bellepierre",
+    "phone": "0692198701",
+    "role": "administrateur principale",
+    "profilePhoto": "/uploads/profil/photo/profile-1-1772979394488.JPG"
+  }
+]
