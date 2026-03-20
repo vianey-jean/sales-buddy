@@ -353,6 +353,7 @@ const LiveChatAdmin: React.FC = () => {
           setAdminMessages(prev => prev.find(m => m.id === msg.id) ? prev : [...prev, msg]);
           setInput('');
           setShowEmojis(false);
+          sendAdminTypingIndicator(false);
           loadAdminConversations();
         }
       } catch (e) { console.error('Error sending:', e); }
