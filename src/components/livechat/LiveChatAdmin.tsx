@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, Loader2, ChevronLeft, Users, Smile, Heart, Pencil, Trash2, Check, XCircle, UserCheck } from 'lucide-react';
+import { MessageCircle, X, Send, Loader2, ChevronLeft, Users, Smile, Heart, Pencil, Trash2, Check, XCircle, UserCheck, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
@@ -88,6 +88,7 @@ const LiveChatAdmin: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
   const [contextMenuId, setContextMenuId] = useState<string | null>(null);
+  const [adminDeleteConfirm, setAdminDeleteConfirm] = useState<{ msgId: string; type: 'own' | 'other' } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -283,6 +284,23 @@ const LiveChatAdmin: React.FC = () => {
       } catch {}
     });
 
+    // Admin-to-admin message deleted (own message deleted for both)
+    es.addEventListener('admin_message_deleted', (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        setAdminMessages(prev => prev.filter(m => m.id !== data.id));
+        loadAdminConversations();
+      } catch {}
+    });
+
+    // Admin-to-admin message hidden (other's message hidden for self)
+    es.addEventListener('admin_message_hidden', (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        setAdminMessages(prev => prev.filter(m => m.id !== data.id));
+      } catch {}
+    });
+
     es.onerror = () => {};
 
     const pollInterval = setInterval(() => {
@@ -417,6 +435,26 @@ const LiveChatAdmin: React.FC = () => {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ senderId: user.id, receiverId: selectedAdmin, isTyping })
     }).catch(() => {});
+  };
+
+  const handleAdminDeleteOwn = async (msgId: string) => {
+    try {
+      await fetch(`${API_BASE}/api/messagerie/admin-delete-own/${msgId}`, {
+        method: 'DELETE', headers: authHeaders
+      });
+      setAdminMessages(prev => prev.filter(m => m.id !== msgId));
+    } catch (e) { console.error('Error deleting own admin message:', e); }
+    setAdminDeleteConfirm(null);
+  };
+
+  const handleAdminHideOther = async (msgId: string) => {
+    try {
+      await fetch(`${API_BASE}/api/messagerie/admin-hide/${msgId}`, {
+        method: 'DELETE', headers: authHeaders
+      });
+      setAdminMessages(prev => prev.filter(m => m.id !== msgId));
+    } catch (e) { console.error('Error hiding admin message:', e); }
+    setAdminDeleteConfirm(null);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -680,33 +718,44 @@ const LiveChatAdmin: React.FC = () => {
                 Commencer la conversation
               </div>
             )}
-            {adminMessages.map((msg) => (
+            {adminMessages.map((msg) => {
+              const isOwn = msg.senderId === user?.id;
+              return (
               <motion.div
                 key={msg.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`flex ${msg.senderId === user?.id ? 'justify-end' : 'justify-start'}`}
+                className={`flex ${isOwn ? 'justify-end' : 'justify-start'} group`}
               >
                 <div className="relative max-w-[80%]">
-                  {msg.senderId !== user?.id && (
+                  {!isOwn && (
                     <div className="text-[10px] text-emerald-400 font-semibold mb-1 ml-1">
                       {msg.senderName}
                     </div>
                   )}
                   <div className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                    msg.senderId === user?.id
+                    isOwn
                       ? 'bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white rounded-br-md'
                       : 'bg-white/[0.08] text-purple-100 border border-white/[0.06] rounded-bl-md'
                   }`}>
                     {msg.contenu}
-                    <div className={`text-[10px] mt-1 ${msg.senderId === user?.id ? 'text-purple-200/50' : 'text-purple-300/30'}`}>
+                    <div className={`text-[10px] mt-1 ${isOwn ? 'text-purple-200/50' : 'text-purple-300/30'}`}>
                       {new Date(msg.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                      {msg.lu && msg.senderId === user?.id && <span className="ml-1">✓✓</span>}
+                      {msg.lu && isOwn && <span className="ml-1">✓✓</span>}
                     </div>
                   </div>
+                  {/* Delete button on hover */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setAdminDeleteConfirm({ msgId: msg.id, type: isOwn ? 'own' : 'other' }); }}
+                    className={`absolute top-1 ${isOwn ? '-left-7' : '-right-7'} opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full hover:bg-red-500/20`}
+                    title={isOwn ? 'Supprimer pour tous' : 'Supprimer pour moi'}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-red-400" />
+                  </button>
                 </div>
               </motion.div>
-            ))}
+              );
+            })}
 
             <AnimatePresence>
               {selectedAdmin && adminTyping[selectedAdmin] && (
@@ -755,6 +804,55 @@ const LiveChatAdmin: React.FC = () => {
               </Button>
             </div>
           </div>
+
+          {/* Delete confirmation modal */}
+          <AnimatePresence>
+            {adminDeleteConfirm && (
+              <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="absolute inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+                onClick={() => setAdminDeleteConfirm(null)}
+              >
+                <motion.div
+                  initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+                  className="bg-slate-800 border border-white/[0.1] rounded-2xl p-5 max-w-[300px] w-full shadow-2xl"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2 bg-red-500/20 rounded-xl">
+                      <AlertTriangle className="h-5 w-5 text-red-400" />
+                    </div>
+                    <h3 className="text-white font-bold text-sm">Supprimer le message</h3>
+                  </div>
+                  <p className="text-purple-200/60 text-xs mb-4 leading-relaxed">
+                    {adminDeleteConfirm.type === 'own'
+                      ? 'Ce message sera supprimé pour vous et pour l\'autre admin. Cette action est irréversible.'
+                      : 'Ce message sera supprimé uniquement de votre côté. L\'autre admin pourra toujours le voir.'}
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setAdminDeleteConfirm(null)}
+                      className="flex-1 py-2 px-3 rounded-xl bg-white/[0.06] text-purple-200 text-xs font-semibold hover:bg-white/[0.1] transition-colors border border-white/[0.08]"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (adminDeleteConfirm.type === 'own') {
+                          handleAdminDeleteOwn(adminDeleteConfirm.msgId);
+                        } else {
+                          handleAdminHideOther(adminDeleteConfirm.msgId);
+                        }
+                      }}
+                      className="flex-1 py-2 px-3 rounded-xl bg-red-500 text-white text-xs font-semibold hover:bg-red-600 transition-colors"
+                    >
+                      Supprimer
+                    </button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </>
       ) : (
         /* Visitor chat messages */
