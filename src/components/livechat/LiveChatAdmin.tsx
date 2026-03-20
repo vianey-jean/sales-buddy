@@ -489,7 +489,7 @@ const LiveChatAdmin: React.FC = () => {
   const headerSubtitle = selectedConv
     ? (visitorTyping[selectedConv] ? 'En train d\'écrire...' : 'En ligne')
     : selectedAdmin
-      ? (selectedAdminUser?.online ? '🟢 En ligne' : '🔴 Hors ligne')
+      ? (selectedAdmin && adminTyping[selectedAdmin] ? 'En train d\'écrire...' : selectedAdminUser?.online ? '🟢 En ligne' : '🔴 Hors ligne')
       : `${conversations.length} visiteur${conversations.length > 1 ? 's' : ''} · ${adminUsers.length} admin${adminUsers.length > 1 ? 's' : ''}`;
 
   return (
