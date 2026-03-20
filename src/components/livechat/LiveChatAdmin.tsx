@@ -449,6 +449,10 @@ const LiveChatAdmin: React.FC = () => {
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+  };
+
   if (!isAuthenticated || !isAdmin) return null;
 
   const allUnread = totalUnread + adminUnread;
