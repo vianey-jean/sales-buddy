@@ -187,21 +187,6 @@ const LiveChatAdmin: React.FC = () => {
     }
   }, [user, token, loadAdminConversations]);
 
-  const handleIncomingCall = useCallback((payload: { visitorId: string }) => {
-    if (payload.visitorId !== selectedConvRef.current) {
-      setSelectedConv(payload.visitorId);
-      setActiveTab('visitors');
-      loadMessages(payload.visitorId);
-    }
-  }, [loadMessages]);
-
-  const webrtc = useWebRTC({
-    visitorId: selectedConv || '',
-    adminId: user?.id || '',
-    from: 'admin',
-    eventSourceRef,
-    onIncomingCallMeta: handleIncomingCall,
-  });
 
   // ========== SSE & POLLING ==========
   useEffect(() => {
