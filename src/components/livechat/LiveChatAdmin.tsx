@@ -702,6 +702,14 @@ const LiveChatAdmin: React.FC = () => {
                           </span>
                         )}
                       </div>
+                      {adminTyping[admin.id] && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                          <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                          <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                          <span className="text-blue-400 text-[10px] ml-1">en train d'écrire...</span>
+                        </div>
+                      )}
                     </div>
                   </button>
                 );
