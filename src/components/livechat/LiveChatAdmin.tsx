@@ -804,6 +804,55 @@ const LiveChatAdmin: React.FC = () => {
               </Button>
             </div>
           </div>
+
+          {/* Delete confirmation modal */}
+          <AnimatePresence>
+            {adminDeleteConfirm && (
+              <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="absolute inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+                onClick={() => setAdminDeleteConfirm(null)}
+              >
+                <motion.div
+                  initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+                  className="bg-slate-800 border border-white/[0.1] rounded-2xl p-5 max-w-[300px] w-full shadow-2xl"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2 bg-red-500/20 rounded-xl">
+                      <AlertTriangle className="h-5 w-5 text-red-400" />
+                    </div>
+                    <h3 className="text-white font-bold text-sm">Supprimer le message</h3>
+                  </div>
+                  <p className="text-purple-200/60 text-xs mb-4 leading-relaxed">
+                    {adminDeleteConfirm.type === 'own'
+                      ? 'Ce message sera supprimé pour vous et pour l\'autre admin. Cette action est irréversible.'
+                      : 'Ce message sera supprimé uniquement de votre côté. L\'autre admin pourra toujours le voir.'}
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setAdminDeleteConfirm(null)}
+                      className="flex-1 py-2 px-3 rounded-xl bg-white/[0.06] text-purple-200 text-xs font-semibold hover:bg-white/[0.1] transition-colors border border-white/[0.08]"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (adminDeleteConfirm.type === 'own') {
+                          handleAdminDeleteOwn(adminDeleteConfirm.msgId);
+                        } else {
+                          handleAdminHideOther(adminDeleteConfirm.msgId);
+                        }
+                      }}
+                      className="flex-1 py-2 px-3 rounded-xl bg-red-500 text-white text-xs font-semibold hover:bg-red-600 transition-colors"
+                    >
+                      Supprimer
+                    </button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </>
       ) : (
         /* Visitor chat messages */
