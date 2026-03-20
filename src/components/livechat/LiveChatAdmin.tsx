@@ -109,6 +109,13 @@ const LiveChatAdmin: React.FC = () => {
   const token = localStorage.getItem('token');
   const authHeaders = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
 
+  const webrtc = useWebRTC({
+    myId: user?.id || '',
+    myName: user ? `${user.firstName} ${user.lastName}` : '',
+    myType: 'admin',
+    authHeaders,
+  });
+
   // ========== VISITOR CHAT FUNCTIONS ==========
   const loadConversations = useCallback(async () => {
     if (!user) return;
