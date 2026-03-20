@@ -745,6 +745,18 @@ const LiveChatAdmin: React.FC = () => {
                 </div>
               </motion.div>
             ))}
+
+            <AnimatePresence>
+              {selectedAdmin && adminTyping[selectedAdmin] && (
+                <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex justify-start">
+                  <div className="bg-white/[0.08] border border-white/[0.06] rounded-2xl rounded-bl-md px-4 py-3 flex gap-1.5">
+                    <span className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
             <div ref={messagesEndRef} />
           </div>
 
