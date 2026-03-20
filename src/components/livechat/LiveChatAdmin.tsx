@@ -88,6 +88,7 @@ const LiveChatAdmin: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
   const [contextMenuId, setContextMenuId] = useState<string | null>(null);
+  const [adminDeleteConfirm, setAdminDeleteConfirm] = useState<{ msgId: string; type: 'own' | 'other' } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
