@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, Loader2, ChevronLeft, Users, Smile, Heart, Pencil, Trash2, Check, XCircle, Phone, Video, UserCheck } from 'lucide-react';
-import { useWebRTC } from './useWebRTC';
-import CallOverlay from './CallOverlay';
+import { MessageCircle, X, Send, Loader2, ChevronLeft, Users, Smile, Heart, Pencil, Trash2, Check, XCircle, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
@@ -188,21 +186,6 @@ const LiveChatAdmin: React.FC = () => {
     }
   }, [user, token, loadAdminConversations]);
 
-  const handleIncomingCall = useCallback((payload: { visitorId: string }) => {
-    if (payload.visitorId !== selectedConvRef.current) {
-      setSelectedConv(payload.visitorId);
-      setActiveTab('visitors');
-      loadMessages(payload.visitorId);
-    }
-  }, [loadMessages]);
-
-  const webrtc = useWebRTC({
-    visitorId: selectedConv || '',
-    adminId: user?.id || '',
-    from: 'admin',
-    eventSourceRef,
-    onIncomingCallMeta: handleIncomingCall,
-  });
 
   // ========== SSE & POLLING ==========
   useEffect(() => {
@@ -477,7 +460,7 @@ const LiveChatAdmin: React.FC = () => {
     );
   }
 
-  const activeConversationId = selectedConv || webrtc.activeVisitorId || null;
+  const activeConversationId = selectedConv || null;
   const selectedConversation = conversations.find(c => c.visitorId === activeConversationId);
   const selectedAdminUser = adminUsers.find(a => a.id === selectedAdmin);
 
@@ -514,42 +497,12 @@ const LiveChatAdmin: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-1">
-          {selectedConv && (
-            <>
-              <button onClick={() => webrtc.startCall('audio')} className="p-2 hover:bg-white/10 rounded-lg transition-colors" title="Appel audio">
-                <Phone className="h-4 w-4 text-white" />
-              </button>
-              <button onClick={() => webrtc.startCall('video')} className="p-2 hover:bg-white/10 rounded-lg transition-colors" title="Appel vidéo">
-                <Video className="h-4 w-4 text-white" />
-              </button>
-            </>
-          )}
           <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
             <X className="h-4 w-4 text-white" />
           </button>
         </div>
       </div>
 
-      {/* Call Overlay */}
-      {activeConversationId && (
-        <CallOverlay
-          callStatus={webrtc.callStatus}
-          callType={webrtc.callType}
-          isMuted={webrtc.isMuted}
-          isVideoOff={webrtc.isVideoOff}
-          callDuration={webrtc.callDuration}
-          incomingCall={webrtc.incomingCall}
-          localVideoRef={webrtc.localVideoRef}
-          remoteVideoRef={webrtc.remoteVideoRef}
-          remoteAudioRef={webrtc.remoteAudioRef}
-          callerName={selectedConversation?.visitorNom || 'Visiteur'}
-          onAccept={webrtc.acceptCall}
-          onReject={webrtc.rejectCall}
-          onEnd={() => webrtc.endCall(true)}
-          onToggleMute={webrtc.toggleMute}
-          onToggleVideo={webrtc.toggleVideo}
-        />
-      )}
 
       {/* Tab bar when no chat selected */}
       {!isInChat && (

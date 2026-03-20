@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, Minimize2, Loader2, User, Smile, Heart, Pencil, Trash2, Check, XCircle, Phone, Video } from 'lucide-react';
+import { MessageCircle, X, Send, Minimize2, Loader2, User, Smile, Heart, Pencil, Trash2, Check, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useWebRTC } from './useWebRTC';
-import CallOverlay from './CallOverlay';
 import { Input } from '@/components/ui/input';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://server-gestion-ventes.onrender.com';
@@ -50,12 +48,6 @@ const LiveChatVisitor: React.FC<LiveChatVisitorProps> = ({ visitorNom, adminId, 
     `visitor_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
   );
 
-  const webrtc = useWebRTC({
-    visitorId: visitorId.current,
-    adminId,
-    from: 'visitor',
-    eventSourceRef,
-  });
 
   useEffect(() => {
     localStorage.setItem('livechat_visitor_id', visitorId.current);
@@ -255,12 +247,6 @@ const LiveChatVisitor: React.FC<LiveChatVisitorProps> = ({ visitorNom, adminId, 
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <button onClick={() => webrtc.startCall('audio')} className="p-2 hover:bg-white/10 rounded-lg transition-colors" title="Appel audio">
-            <Phone className="h-4 w-4 text-white" />
-          </button>
-          <button onClick={() => webrtc.startCall('video')} className="p-2 hover:bg-white/10 rounded-lg transition-colors" title="Appel vidéo">
-            <Video className="h-4 w-4 text-white" />
-          </button>
           <button onClick={() => setIsMinimized(true)} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
             <Minimize2 className="h-4 w-4 text-white" />
           </button>
@@ -270,24 +256,6 @@ const LiveChatVisitor: React.FC<LiveChatVisitorProps> = ({ visitorNom, adminId, 
         </div>
       </div>
 
-      {/* Call Overlay */}
-      <CallOverlay
-        callStatus={webrtc.callStatus}
-        callType={webrtc.callType}
-        isMuted={webrtc.isMuted}
-        isVideoOff={webrtc.isVideoOff}
-        callDuration={webrtc.callDuration}
-        incomingCall={webrtc.incomingCall}
-        localVideoRef={webrtc.localVideoRef}
-        remoteVideoRef={webrtc.remoteVideoRef}
-        remoteAudioRef={webrtc.remoteAudioRef}
-        callerName="Admin"
-        onAccept={webrtc.acceptCall}
-        onReject={webrtc.rejectCall}
-        onEnd={() => webrtc.endCall(true)}
-        onToggleMute={webrtc.toggleMute}
-        onToggleVideo={webrtc.toggleVideo}
-      />
 
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gradient-to-b from-slate-900 via-slate-900/95 to-slate-950">
