@@ -571,7 +571,32 @@ router.delete('/admin-hide/:messageId', authMiddleware, (req, res) => {
   }
 });
 
-// (WebRTC Call Signaling removed)
+// =====================
+// WebRTC Call Signaling
+// =====================
+router.post('/call-signal', (req, res) => {
+  try {
+    const signal = req.body;
+    const { toType, toId } = signal;
+
+    // Route signal to the target
+    sseClients.forEach((client) => {
+      let match = false;
+      if (toType === 'visitor' && client.visitorId === toId) match = true;
+      if (toType === 'admin' && client.adminId === toId) match = true;
+      if (match) {
+        try {
+          client.res.write(`event: call_signal\ndata: ${JSON.stringify(signal)}\n\n`);
+        } catch (e) {}
+      }
+    });
+
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('Error in call signal:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
 
 // =====================
 // Like/unlike a message
