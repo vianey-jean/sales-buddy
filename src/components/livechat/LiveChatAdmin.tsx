@@ -556,7 +556,7 @@ const LiveChatAdmin: React.FC = () => {
         onToggleMute={webrtc.toggleMute}
         onToggleVideo={webrtc.toggleVideo}
       />
-    >
+
       {/* Header */}
       <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 px-5 py-4 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
@@ -571,6 +571,40 @@ const LiveChatAdmin: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-1">
+          {isInChat && (
+            <>
+              <button
+                onClick={() => {
+                  if (selectedConv) {
+                    const conv = conversations.find(c => c.visitorId === selectedConv);
+                    webrtc.startCall('visitor', selectedConv, conv?.visitorNom || 'Visiteur', 'audio');
+                  } else if (selectedAdmin) {
+                    const admin = adminUsers.find(a => a.id === selectedAdmin);
+                    webrtc.startCall('admin', selectedAdmin, `${admin?.firstName} ${admin?.lastName}`, 'audio');
+                  }
+                }}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                title="Appel audio"
+              >
+                <Phone className="h-4 w-4 text-white" />
+              </button>
+              <button
+                onClick={() => {
+                  if (selectedConv) {
+                    const conv = conversations.find(c => c.visitorId === selectedConv);
+                    webrtc.startCall('visitor', selectedConv, conv?.visitorNom || 'Visiteur', 'video');
+                  } else if (selectedAdmin) {
+                    const admin = adminUsers.find(a => a.id === selectedAdmin);
+                    webrtc.startCall('admin', selectedAdmin, `${admin?.firstName} ${admin?.lastName}`, 'video');
+                  }
+                }}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                title="Appel vidéo"
+              >
+                <Video className="h-4 w-4 text-white" />
+              </button>
+            </>
+          )}
           <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
             <X className="h-4 w-4 text-white" />
           </button>
