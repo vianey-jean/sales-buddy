@@ -247,12 +247,6 @@ const LiveChatVisitor: React.FC<LiveChatVisitorProps> = ({ visitorNom, adminId, 
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <button onClick={() => webrtc.startCall('audio')} className="p-2 hover:bg-white/10 rounded-lg transition-colors" title="Appel audio">
-            <Phone className="h-4 w-4 text-white" />
-          </button>
-          <button onClick={() => webrtc.startCall('video')} className="p-2 hover:bg-white/10 rounded-lg transition-colors" title="Appel vidéo">
-            <Video className="h-4 w-4 text-white" />
-          </button>
           <button onClick={() => setIsMinimized(true)} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
             <Minimize2 className="h-4 w-4 text-white" />
           </button>
