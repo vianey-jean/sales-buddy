@@ -84,6 +84,7 @@ const LiveChatAdmin: React.FC = () => {
   const [input, setInput] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [visitorTyping, setVisitorTyping] = useState<Record<string, boolean>>({});
+  const [adminTyping, setAdminTyping] = useState<Record<string, boolean>>({});
   const [totalUnread, setTotalUnread] = useState(0);
   const [showEmojis, setShowEmojis] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
