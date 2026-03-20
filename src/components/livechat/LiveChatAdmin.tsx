@@ -310,6 +310,14 @@ const LiveChatAdmin: React.FC = () => {
       } catch {}
     });
 
+    // WebRTC call signaling
+    es.addEventListener('call_signal', (e) => {
+      try {
+        const signal = JSON.parse(e.data);
+        webrtc.handleSignal(signal);
+      } catch {}
+    });
+
     es.onerror = () => {};
 
     const pollInterval = setInterval(() => {
