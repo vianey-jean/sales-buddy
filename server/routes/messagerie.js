@@ -220,7 +220,8 @@ router.get('/admin-messages/:otherAdminId', authMiddleware, (req, res) => {
     const otherId = req.params.otherAdminId;
     const convMessages = messages.filter(
       m => (m.senderId === myId && m.receiverId === otherId) || (m.senderId === otherId && m.receiverId === myId)
-    ).sort((a, b) => new Date(a.date) - new Date(b.date));
+    ).filter(m => !m.hiddenFor || !m.hiddenFor.includes(myId))
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
     res.json(convMessages);
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur' });
