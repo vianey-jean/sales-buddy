@@ -277,7 +277,8 @@ const LiveChatAdmin: React.FC = () => {
     es.addEventListener('admin_message', (e) => {
       try {
         const msg: AdminMessage = JSON.parse(e.data);
-        if (selectedAdmin === msg.senderId || selectedAdmin === msg.receiverId) {
+        const currentSelectedAdmin = selectedAdminRef.current;
+        if (currentSelectedAdmin === msg.senderId || currentSelectedAdmin === msg.receiverId) {
           setAdminMessages(prev => prev.find(m => m.id === msg.id) ? prev : [...prev, msg]);
           if (msg.senderId !== user.id) {
             fetch(`${API_BASE}/api/messagerie/admin-mark-read/${msg.senderId}`, {
@@ -286,6 +287,16 @@ const LiveChatAdmin: React.FC = () => {
           }
         }
         loadAdminConversations();
+      } catch {}
+    });
+
+    // Admin-to-admin typing indicator via SSE
+    es.addEventListener('admin_typing', (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.senderId !== user.id) {
+          setAdminTyping(prev => ({ ...prev, [data.senderId]: data.isTyping }));
+        }
       } catch {}
     });
 
