@@ -84,6 +84,7 @@ const LiveChatAdmin: React.FC = () => {
   const [input, setInput] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [visitorTyping, setVisitorTyping] = useState<Record<string, boolean>>({});
+  const [adminTyping, setAdminTyping] = useState<Record<string, boolean>>({});
   const [totalUnread, setTotalUnread] = useState(0);
   const [showEmojis, setShowEmojis] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -94,9 +95,12 @@ const LiveChatAdmin: React.FC = () => {
   const eventSourceRef = useRef<EventSource | null>(null);
   
   const selectedConvRef = useRef<string | null>(null);
+  const selectedAdminRef = useRef<string | null>(null);
   const messagesRef = useRef<ChatMessage[]>([]);
+  const adminTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { selectedConvRef.current = selectedConv; }, [selectedConv]);
+  useEffect(() => { selectedAdminRef.current = selectedAdmin; }, [selectedAdmin]);
   useEffect(() => { messagesRef.current = messages; }, [messages]);
 
   const isAdmin = user?.role === 'administrateur' || user?.role === 'administrateur principale';
@@ -273,7 +277,8 @@ const LiveChatAdmin: React.FC = () => {
     es.addEventListener('admin_message', (e) => {
       try {
         const msg: AdminMessage = JSON.parse(e.data);
-        if (selectedAdmin === msg.senderId || selectedAdmin === msg.receiverId) {
+        const currentSelectedAdmin = selectedAdminRef.current;
+        if (currentSelectedAdmin === msg.senderId || currentSelectedAdmin === msg.receiverId) {
           setAdminMessages(prev => prev.find(m => m.id === msg.id) ? prev : [...prev, msg]);
           if (msg.senderId !== user.id) {
             fetch(`${API_BASE}/api/messagerie/admin-mark-read/${msg.senderId}`, {
@@ -282,6 +287,16 @@ const LiveChatAdmin: React.FC = () => {
           }
         }
         loadAdminConversations();
+      } catch {}
+    });
+
+    // Admin-to-admin typing indicator via SSE
+    es.addEventListener('admin_typing', (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.senderId !== user.id) {
+          setAdminTyping(prev => ({ ...prev, [data.senderId]: data.isTyping }));
+        }
       } catch {}
     });
 
@@ -306,7 +321,7 @@ const LiveChatAdmin: React.FC = () => {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, adminMessages, visitorTyping]);
+  }, [messages, adminMessages, visitorTyping, adminTyping]);
 
   // ========== VISITOR CHAT HANDLERS ==========
   const openConversation = (visitorId: string) => {
@@ -338,6 +353,7 @@ const LiveChatAdmin: React.FC = () => {
           setAdminMessages(prev => prev.find(m => m.id === msg.id) ? prev : [...prev, msg]);
           setInput('');
           setShowEmojis(false);
+          sendAdminTypingIndicator(false);
           loadAdminConversations();
         }
       } catch (e) { console.error('Error sending:', e); }
@@ -412,12 +428,25 @@ const LiveChatAdmin: React.FC = () => {
     }).catch(() => {});
   };
 
+  const sendAdminTypingIndicator = (isTyping: boolean) => {
+    if (!selectedAdmin || !user) return;
+    fetch(`${API_BASE}/api/messagerie/admin-typing`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ senderId: user.id, receiverId: selectedAdmin, isTyping })
+    }).catch(() => {});
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
     if (activeTab === 'visitors' && selectedConv) {
       sendTypingIndicator(true);
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       typingTimeoutRef.current = setTimeout(() => sendTypingIndicator(false), 2000);
+    }
+    if (activeTab === 'admins' && selectedAdmin) {
+      sendAdminTypingIndicator(true);
+      if (adminTypingTimeoutRef.current) clearTimeout(adminTypingTimeoutRef.current);
+      adminTypingTimeoutRef.current = setTimeout(() => sendAdminTypingIndicator(false), 2000);
     }
   };
 
@@ -461,7 +490,7 @@ const LiveChatAdmin: React.FC = () => {
   const headerSubtitle = selectedConv
     ? (visitorTyping[selectedConv] ? 'En train d\'écrire...' : 'En ligne')
     : selectedAdmin
-      ? (selectedAdminUser?.online ? '🟢 En ligne' : '🔴 Hors ligne')
+      ? (selectedAdmin && adminTyping[selectedAdmin] ? 'En train d\'écrire...' : selectedAdminUser?.online ? '🟢 En ligne' : '🔴 Hors ligne')
       : `${conversations.length} visiteur${conversations.length > 1 ? 's' : ''} · ${adminUsers.length} admin${adminUsers.length > 1 ? 's' : ''}`;
 
   return (
@@ -673,6 +702,14 @@ const LiveChatAdmin: React.FC = () => {
                           </span>
                         )}
                       </div>
+                      {adminTyping[admin.id] && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                          <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                          <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                          <span className="text-blue-400 text-[10px] ml-1">en train d'écrire...</span>
+                        </div>
+                      )}
                     </div>
                   </button>
                 );
@@ -717,6 +754,18 @@ const LiveChatAdmin: React.FC = () => {
                 </div>
               </motion.div>
             ))}
+
+            <AnimatePresence>
+              {selectedAdmin && adminTyping[selectedAdmin] && (
+                <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex justify-start">
+                  <div className="bg-white/[0.08] border border-white/[0.06] rounded-2xl rounded-bl-md px-4 py-3 flex gap-1.5">
+                    <span className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
             <div ref={messagesEndRef} />
           </div>
 
