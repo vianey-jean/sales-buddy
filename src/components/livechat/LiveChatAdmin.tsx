@@ -321,7 +321,7 @@ const LiveChatAdmin: React.FC = () => {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, adminMessages, visitorTyping]);
+  }, [messages, adminMessages, visitorTyping, adminTyping]);
 
   // ========== VISITOR CHAT HANDLERS ==========
   const openConversation = (visitorId: string) => {
