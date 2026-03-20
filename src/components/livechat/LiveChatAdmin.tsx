@@ -718,33 +718,44 @@ const LiveChatAdmin: React.FC = () => {
                 Commencer la conversation
               </div>
             )}
-            {adminMessages.map((msg) => (
+            {adminMessages.map((msg) => {
+              const isOwn = msg.senderId === user?.id;
+              return (
               <motion.div
                 key={msg.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`flex ${msg.senderId === user?.id ? 'justify-end' : 'justify-start'}`}
+                className={`flex ${isOwn ? 'justify-end' : 'justify-start'} group`}
               >
                 <div className="relative max-w-[80%]">
-                  {msg.senderId !== user?.id && (
+                  {!isOwn && (
                     <div className="text-[10px] text-emerald-400 font-semibold mb-1 ml-1">
                       {msg.senderName}
                     </div>
                   )}
                   <div className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                    msg.senderId === user?.id
+                    isOwn
                       ? 'bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white rounded-br-md'
                       : 'bg-white/[0.08] text-purple-100 border border-white/[0.06] rounded-bl-md'
                   }`}>
                     {msg.contenu}
-                    <div className={`text-[10px] mt-1 ${msg.senderId === user?.id ? 'text-purple-200/50' : 'text-purple-300/30'}`}>
+                    <div className={`text-[10px] mt-1 ${isOwn ? 'text-purple-200/50' : 'text-purple-300/30'}`}>
                       {new Date(msg.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                      {msg.lu && msg.senderId === user?.id && <span className="ml-1">✓✓</span>}
+                      {msg.lu && isOwn && <span className="ml-1">✓✓</span>}
                     </div>
                   </div>
+                  {/* Delete button on hover */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setAdminDeleteConfirm({ msgId: msg.id, type: isOwn ? 'own' : 'other' }); }}
+                    className={`absolute top-1 ${isOwn ? '-left-7' : '-right-7'} opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full hover:bg-red-500/20`}
+                    title={isOwn ? 'Supprimer pour tous' : 'Supprimer pour moi'}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-red-400" />
+                  </button>
                 </div>
               </motion.div>
-            ))}
+              );
+            })}
 
             <AnimatePresence>
               {selectedAdmin && adminTyping[selectedAdmin] && (
