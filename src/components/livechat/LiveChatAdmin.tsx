@@ -284,6 +284,23 @@ const LiveChatAdmin: React.FC = () => {
       } catch {}
     });
 
+    // Admin-to-admin message deleted (own message deleted for both)
+    es.addEventListener('admin_message_deleted', (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        setAdminMessages(prev => prev.filter(m => m.id !== data.id));
+        loadAdminConversations();
+      } catch {}
+    });
+
+    // Admin-to-admin message hidden (other's message hidden for self)
+    es.addEventListener('admin_message_hidden', (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        setAdminMessages(prev => prev.filter(m => m.id !== data.id));
+      } catch {}
+    });
+
     es.onerror = () => {};
 
     const pollInterval = setInterval(() => {
