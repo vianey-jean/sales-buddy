@@ -107,7 +107,12 @@ const LiveChatAdmin: React.FC = () => {
   const isAdmin = user?.role === 'administrateur' || user?.role === 'administrateur principale';
 
   const token = localStorage.getItem('token');
-  const authHeaders = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+  const authHeadersRef = React.useRef<Record<string, string>>({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+  React.useEffect(() => {
+    const t = localStorage.getItem('token');
+    authHeadersRef.current = { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' };
+  }, [token]);
+  const authHeaders = authHeadersRef.current;
 
   const webrtc = useWebRTC({
     myId: user?.id || '',
@@ -552,7 +557,7 @@ const LiveChatAdmin: React.FC = () => {
         incomingCall={webrtc.incomingCall}
         onAnswer={webrtc.answerCall}
         onReject={webrtc.rejectCall}
-        onEndCall={webrtc.endCall}
+        onEndCall={() => webrtc.endCall()}
         onToggleMute={webrtc.toggleMute}
         onToggleVideo={webrtc.toggleVideo}
       />
