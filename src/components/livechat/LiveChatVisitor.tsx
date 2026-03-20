@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, Minimize2, Loader2, User, Smile, Heart, Pencil, Trash2, Check, XCircle, Phone, Video } from 'lucide-react';
+import { MessageCircle, X, Send, Minimize2, Loader2, User, Smile, Heart, Pencil, Trash2, Check, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useWebRTC } from './useWebRTC';
-import CallOverlay from './CallOverlay';
 import { Input } from '@/components/ui/input';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://server-gestion-ventes.onrender.com';
