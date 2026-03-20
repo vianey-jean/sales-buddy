@@ -535,8 +535,27 @@ const LiveChatAdmin: React.FC = () => {
     <motion.div
       initial={{ opacity: 0, y: 100, scale: 0.8 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      className="fixed bottom-6 right-6 z-[9999] w-[400px] max-w-[calc(100vw-2rem)] h-[560px] max-h-[calc(100vh-6rem)] flex flex-col rounded-3xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.5)] border border-white/[0.1]"
+      className="fixed bottom-6 right-6 z-[9999] w-[400px] max-w-[calc(100vw-2rem)] h-[560px] max-h-[calc(100vh-6rem)] flex flex-col rounded-3xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.5)] border border-white/[0.1] relative"
       onClick={() => { setContextMenuId(null); setShowEmojis(false); }}
+    >
+      {/* Call Overlay */}
+      <CallOverlay
+        callState={webrtc.callState}
+        callDirection={webrtc.callDirection}
+        callType={webrtc.callType}
+        remoteCallerName={webrtc.remoteCallerName}
+        isMuted={webrtc.isMuted}
+        isVideoOff={webrtc.isVideoOff}
+        callDuration={webrtc.callDuration}
+        localVideoRef={webrtc.localVideoRef}
+        remoteVideoRef={webrtc.remoteVideoRef}
+        incomingCall={webrtc.incomingCall}
+        onAnswer={webrtc.answerCall}
+        onReject={webrtc.rejectCall}
+        onEndCall={webrtc.endCall}
+        onToggleMute={webrtc.toggleMute}
+        onToggleVideo={webrtc.toggleVideo}
+      />
     >
       {/* Header */}
       <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 px-5 py-4 flex items-center justify-between shrink-0">
