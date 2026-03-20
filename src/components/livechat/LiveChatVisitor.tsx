@@ -48,12 +48,6 @@ const LiveChatVisitor: React.FC<LiveChatVisitorProps> = ({ visitorNom, adminId, 
     `visitor_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
   );
 
-  const webrtc = useWebRTC({
-    visitorId: visitorId.current,
-    adminId,
-    from: 'visitor',
-    eventSourceRef,
-  });
 
   useEffect(() => {
     localStorage.setItem('livechat_visitor_id', visitorId.current);
