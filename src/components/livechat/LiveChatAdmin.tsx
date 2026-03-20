@@ -504,26 +504,6 @@ const LiveChatAdmin: React.FC = () => {
         </div>
       </div>
 
-      {/* Call Overlay */}
-      {activeConversationId && (
-        <CallOverlay
-          callStatus={webrtc.callStatus}
-          callType={webrtc.callType}
-          isMuted={webrtc.isMuted}
-          isVideoOff={webrtc.isVideoOff}
-          callDuration={webrtc.callDuration}
-          incomingCall={webrtc.incomingCall}
-          localVideoRef={webrtc.localVideoRef}
-          remoteVideoRef={webrtc.remoteVideoRef}
-          remoteAudioRef={webrtc.remoteAudioRef}
-          callerName={selectedConversation?.visitorNom || 'Visiteur'}
-          onAccept={webrtc.acceptCall}
-          onReject={webrtc.rejectCall}
-          onEnd={() => webrtc.endCall(true)}
-          onToggleMute={webrtc.toggleMute}
-          onToggleVideo={webrtc.toggleVideo}
-        />
-      )}
 
       {/* Tab bar when no chat selected */}
       {!isInChat && (
