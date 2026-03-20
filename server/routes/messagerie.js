@@ -198,7 +198,7 @@ router.get('/admin-conversations', authMiddleware, (req, res) => {
     const messages = readAdminDB();
     const myId = req.user.id;
     const convMap = {};
-    messages.filter(m => m.senderId === myId || m.receiverId === myId).forEach(m => {
+    messages.filter(m => (m.senderId === myId || m.receiverId === myId) && (!m.hiddenFor || !m.hiddenFor.includes(myId))).forEach(m => {
       const otherId = m.senderId === myId ? m.receiverId : m.senderId;
       if (!convMap[otherId]) {
         convMap[otherId] = { adminId: otherId, adminName: m.senderId === myId ? m.receiverName : m.senderName, lastMessage: null, unreadCount: 0 };
