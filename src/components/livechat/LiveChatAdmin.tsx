@@ -557,7 +557,7 @@ const LiveChatAdmin: React.FC = () => {
         incomingCall={webrtc.incomingCall}
         onAnswer={webrtc.answerCall}
         onReject={webrtc.rejectCall}
-        onEndCall={webrtc.endCall}
+        onEndCall={() => webrtc.endCall()}
         onToggleMute={webrtc.toggleMute}
         onToggleVideo={webrtc.toggleVideo}
       />
