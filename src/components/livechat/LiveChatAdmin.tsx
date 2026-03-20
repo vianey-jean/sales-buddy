@@ -461,7 +461,7 @@ const LiveChatAdmin: React.FC = () => {
     );
   }
 
-  const activeConversationId = selectedConv || webrtc.activeVisitorId || null;
+  const activeConversationId = selectedConv || null;
   const selectedConversation = conversations.find(c => c.visitorId === activeConversationId);
   const selectedAdminUser = adminUsers.find(a => a.id === selectedAdmin);
 
