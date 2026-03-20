@@ -437,6 +437,26 @@ const LiveChatAdmin: React.FC = () => {
     }).catch(() => {});
   };
 
+  const handleAdminDeleteOwn = async (msgId: string) => {
+    try {
+      await fetch(`${API_BASE}/api/messagerie/admin-delete-own/${msgId}`, {
+        method: 'DELETE', headers: authHeaders
+      });
+      setAdminMessages(prev => prev.filter(m => m.id !== msgId));
+    } catch (e) { console.error('Error deleting own admin message:', e); }
+    setAdminDeleteConfirm(null);
+  };
+
+  const handleAdminHideOther = async (msgId: string) => {
+    try {
+      await fetch(`${API_BASE}/api/messagerie/admin-hide/${msgId}`, {
+        method: 'DELETE', headers: authHeaders
+      });
+      setAdminMessages(prev => prev.filter(m => m.id !== msgId));
+    } catch (e) { console.error('Error hiding admin message:', e); }
+    setAdminDeleteConfirm(null);
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
     if (activeTab === 'visitors' && selectedConv) {
