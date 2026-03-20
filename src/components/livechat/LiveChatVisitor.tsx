@@ -256,24 +256,6 @@ const LiveChatVisitor: React.FC<LiveChatVisitorProps> = ({ visitorNom, adminId, 
         </div>
       </div>
 
-      {/* Call Overlay */}
-      <CallOverlay
-        callStatus={webrtc.callStatus}
-        callType={webrtc.callType}
-        isMuted={webrtc.isMuted}
-        isVideoOff={webrtc.isVideoOff}
-        callDuration={webrtc.callDuration}
-        incomingCall={webrtc.incomingCall}
-        localVideoRef={webrtc.localVideoRef}
-        remoteVideoRef={webrtc.remoteVideoRef}
-        remoteAudioRef={webrtc.remoteAudioRef}
-        callerName="Admin"
-        onAccept={webrtc.acceptCall}
-        onReject={webrtc.rejectCall}
-        onEnd={() => webrtc.endCall(true)}
-        onToggleMute={webrtc.toggleMute}
-        onToggleVideo={webrtc.toggleVideo}
-      />
 
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gradient-to-b from-slate-900 via-slate-900/95 to-slate-950">
