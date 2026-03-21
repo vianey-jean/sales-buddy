@@ -57,6 +57,16 @@ const ParametresSection: React.FC<ParametresSectionProps> = ({ userRole }) => {
   const [isBackupCodeValid, setIsBackupCodeValid] = useState(false);
   const [backingUp, setBackingUp] = useState(false);
 
+  // Auto-backup state
+  const [autoBackupEnabled, setAutoBackupEnabled] = useState(false);
+  const [autoBackupCode, setAutoBackupCode] = useState('');
+  const [showAutoBackupCode, setShowAutoBackupCode] = useState(false);
+  const [savingAutoBackup, setSavingAutoBackup] = useState(false);
+  const [triggeringBackup, setTriggeringBackup] = useState(false);
+  const [autoBackupStatus, setAutoBackupStatus] = useState<string | null>(null);
+  const [autoBackupLastDate, setAutoBackupLastDate] = useState<string | null>(null);
+  const [hasEncryptionCode, setHasEncryptionCode] = useState(false);
+
   // Restore state
   const [showRestoreDialog, setShowRestoreDialog] = useState(false);
   const [restoreCode, setRestoreCode] = useState('');
