@@ -101,6 +101,13 @@ router.get('/', authMiddleware, (req, res) => {
       security: { ...DEFAULT_SETTINGS.security, ...(rawSettings.security || {}) },
       backup: { ...DEFAULT_SETTINGS.backup, ...(rawSettings.backup || {}) },
     };
+    // Don't expose encryption code, add hasEncryptionCode flag
+    const safeBackup = { ...settings.backup };
+    const hasCode = !!(safeBackup.autoBackupEncryptionCode && safeBackup.autoBackupEncryptionCode.length >= 6);
+    delete safeBackup.autoBackupEncryptionCode;
+    safeBackup.hasEncryptionCode = hasCode;
+    settings.backup = safeBackup;
+
     const isUserAdmin = isAdmin(req.user);
     res.json({ settings, isAdmin: isUserAdmin });
   } catch (error) {
