@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import {
   Settings, Trash2, Upload, Download, Shield, Eye, EyeOff, AlertTriangle,
  ChevronDown, ChevronUp,
-  UserCog, ArrowUpCircle, ArrowDownCircle, CalendarOff, Radio
+  UserCog, ArrowUpCircle, ArrowDownCircle, CalendarOff, Radio, Cloud, CloudOff, Clock, Send
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
