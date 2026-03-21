@@ -264,6 +264,44 @@ const ParametresSection: React.FC<ParametresSectionProps> = ({ userRole }) => {
     }
   };
 
+  // ========== AUTO-BACKUP CONFIG ==========
+  const handleSaveAutoBackupConfig = async () => {
+    try {
+      setSavingAutoBackup(true);
+      const result = await settingsApi.configureAutoBackup({
+        autoBackup: autoBackupEnabled,
+        autoBackupEncryptionCode: autoBackupCode || undefined,
+      });
+      if (result.success) {
+        toast({ title: '✅ Configuration sauvegardée', description: autoBackupEnabled ? 'Sauvegarde auto activée (chaque jour à 22h00)' : 'Sauvegarde auto désactivée', className: 'bg-green-600 text-white border-green-600' });
+        setAutoBackupStatus(result.backup.lastAutoBackupStatus || null);
+        setAutoBackupLastDate(result.backup.lastAutoBackupDate || null);
+        setHasEncryptionCode(result.backup.hasEncryptionCode || false);
+        setAutoBackupCode('');
+      }
+    } catch (e) {
+      toast({ title: 'Erreur', description: 'Impossible de sauvegarder la configuration', variant: 'destructive' });
+    } finally {
+      setSavingAutoBackup(false);
+    }
+  };
+
+  const handleTriggerAutoBackup = async () => {
+    try {
+      setTriggeringBackup(true);
+      const result = await settingsApi.triggerAutoBackupNow();
+      if (result.success) {
+        toast({ title: '✅ Sauvegarde envoyée', description: 'Fichier uploadé sur Google Drive', className: 'bg-green-600 text-white border-green-600' });
+        setAutoBackupStatus(result.backup.lastAutoBackupStatus || null);
+        setAutoBackupLastDate(result.backup.lastAutoBackupDate || null);
+      }
+    } catch (e) {
+      toast({ title: 'Erreur', description: 'Échec de la sauvegarde automatique', variant: 'destructive' });
+    } finally {
+      setTriggeringBackup(false);
+    }
+  };
+
   // ========== RESTORE ==========
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
