@@ -92,7 +92,7 @@ const ParametresSection: React.FC<ParametresSectionProps> = ({ userRole }) => {
     notifications: { rdvReminder: true, rdvReminderMinutes: 30, tacheReminder: true, emailNotifications: false, soundEnabled: true },
     display: { itemsPerPage: 10, theme: 'system', compactMode: false, showWelcomeMessage: true },
     security: { sessionTimeoutMinutes: 60, maxLoginAttempts: 5, requireStrongPassword: true },
-    backup: { lastBackupDate: null, autoBackup: false, autoBackupIntervalDays: 7 },
+    backup: { lastBackupDate: null, autoBackup: false, autoBackupIntervalDays: 7, lastAutoBackupDate: null, lastAutoBackupStatus: null },
   };
 
   const fetchSettings = async () => {
