@@ -28,6 +28,11 @@ export interface AppSettings {
     lastBackupDate: string | null;
     autoBackup: boolean;
     autoBackupIntervalDays: number;
+    autoBackupEncryptionCode?: string;
+    googleDriveFolderId?: string;
+    lastAutoBackupDate: string | null;
+    lastAutoBackupStatus: string | null;
+    hasEncryptionCode?: boolean;
   };
 }
 
