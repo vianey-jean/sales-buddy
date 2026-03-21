@@ -109,7 +109,6 @@ const ParametresSection: React.FC<ParametresSectionProps> = ({ userRole }) => {
     try {
       setLoading(true);
       const result = await settingsApi.getSettings();
-      // Merge with defaults to prevent undefined nested objects
       const merged: AppSettings = {
         ...defaultSettings,
         ...result.settings,
@@ -120,6 +119,11 @@ const ParametresSection: React.FC<ParametresSectionProps> = ({ userRole }) => {
       };
       setSettings(merged);
       setIsAdminFromServer(result.isAdmin);
+      // Set auto-backup state from settings
+      setAutoBackupEnabled(merged.backup.autoBackup || false);
+      setAutoBackupStatus(merged.backup.lastAutoBackupStatus || null);
+      setAutoBackupLastDate(merged.backup.lastAutoBackupDate || null);
+      setHasEncryptionCode(merged.backup.hasEncryptionCode || false);
     } catch (e) {
       console.error('Error fetching settings:', e);
       setSettings(defaultSettings);
