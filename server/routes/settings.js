@@ -10,6 +10,8 @@ const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const cron = require('node-cron');
+const { google } = require('googleapis');
 const authMiddleware = require('../middleware/auth');
 
 const dbPath = path.join(__dirname, '../db');
@@ -53,6 +55,10 @@ const DEFAULT_SETTINGS = {
     lastBackupDate: null,
     autoBackup: false,
     autoBackupIntervalDays: 7,
+    autoBackupEncryptionCode: '',
+    googleDriveFolderId: '1X8VuDHGmIY9-m7PuiIMDIX4bAqoNjdPU',
+    lastAutoBackupDate: null,
+    lastAutoBackupStatus: null,
   },
 };
 
@@ -95,6 +101,13 @@ router.get('/', authMiddleware, (req, res) => {
       security: { ...DEFAULT_SETTINGS.security, ...(rawSettings.security || {}) },
       backup: { ...DEFAULT_SETTINGS.backup, ...(rawSettings.backup || {}) },
     };
+    // Don't expose encryption code, add hasEncryptionCode flag
+    const safeBackup = { ...settings.backup };
+    const hasCode = !!(safeBackup.autoBackupEncryptionCode && safeBackup.autoBackupEncryptionCode.length >= 6);
+    delete safeBackup.autoBackupEncryptionCode;
+    safeBackup.hasEncryptionCode = hasCode;
+    settings.backup = safeBackup;
+
     const isUserAdmin = isAdmin(req.user);
     res.json({ settings, isAdmin: isUserAdmin });
   } catch (error) {
@@ -426,6 +439,200 @@ router.post('/verify-password', authMiddleware, (req, res) => {
     res.json({ valid: isValid });
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+// ==================
+// Google Drive Auto-Backup
+// ==================
+
+const GOOGLE_DRIVE_FOLDER_ID = '1X8VuDHGmIY9-m7PuiIMDIX4bAqoNjdPU';
+
+/**
+ * Upload backup JSON to Google Drive
+ */
+async function uploadToGoogleDrive(backupJson, filename) {
+  const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  if (!serviceAccountJson) {
+    throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON non configuré');
+  }
+
+  let credentials;
+  try {
+    credentials = JSON.parse(serviceAccountJson);
+  } catch {
+    throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON invalide');
+  }
+
+  const auth = new google.auth.GoogleAuth({
+    credentials,
+    scopes: ['https://www.googleapis.com/auth/drive.file'],
+  });
+
+  const drive = google.drive({ version: 'v3', auth });
+
+  // Create a readable stream from the JSON string
+  const { Readable } = require('stream');
+  const stream = new Readable();
+  stream.push(backupJson);
+  stream.push(null);
+
+  const response = await drive.files.create({
+    requestBody: {
+      name: filename,
+      mimeType: 'application/json',
+      parents: [GOOGLE_DRIVE_FOLDER_ID],
+    },
+    media: {
+      mimeType: 'application/json',
+      body: stream,
+    },
+    fields: 'id, name, webViewLink',
+  });
+
+  return response.data;
+}
+
+/**
+ * Perform auto-backup: encrypt all DB data and upload to Google Drive
+ */
+async function performAutoBackup() {
+  try {
+    const settings = readJson(settingsPath) || {};
+    const backupSettings = { ...DEFAULT_SETTINGS.backup, ...(settings.backup || {}) };
+
+    if (!backupSettings.autoBackup) {
+      return;
+    }
+
+    const encryptionCode = backupSettings.autoBackupEncryptionCode;
+    if (!encryptionCode || encryptionCode.length < 6) {
+      console.error('[Auto-Backup] Code de cryptage non configuré ou trop court');
+      settings.backup = settings.backup || {};
+      settings.backup.lastAutoBackupStatus = 'Échec: code de cryptage non configuré';
+      writeJson(settingsPath, settings);
+      return;
+    }
+
+    // Collect all DB data
+    const backupData = {};
+    getDbFiles().forEach(file => {
+      const filePath = path.join(dbPath, file);
+      const data = readJson(filePath);
+      if (data !== null) {
+        backupData[file] = data;
+      }
+    });
+
+    backupData._metadata = {
+      backupDate: new Date().toISOString(),
+      version: '1.0',
+      type: 'auto',
+      filesCount: Object.keys(backupData).length - 1
+    };
+
+    // Encrypt
+    const jsonData = JSON.stringify(backupData);
+    const algorithm = 'aes-256-cbc';
+    const key = crypto.scryptSync(encryptionCode, 'riziky-salt-2024', 32);
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv(algorithm, key, iv);
+    let encrypted = cipher.update(jsonData, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+
+    const hashedCode = bcrypt.hashSync(encryptionCode, 10);
+
+    const encryptedPackage = {
+      iv: iv.toString('hex'),
+      data: encrypted,
+      checksum: crypto.createHash('sha256').update(jsonData).digest('hex'),
+      codeHash: hashedCode
+    };
+
+    const filename = `auto-backup-riziky-${new Date().toISOString().split('T')[0]}.json`;
+    const backupJsonStr = JSON.stringify(encryptedPackage);
+
+    // Upload to Google Drive
+    const driveResult = await uploadToGoogleDrive(backupJsonStr, filename);
+    console.log(`[Auto-Backup] ✅ Sauvegarde uploadée sur Google Drive: ${driveResult.name} (${driveResult.id})`);
+
+    // Update settings
+    settings.backup = settings.backup || {};
+    settings.backup.lastBackupDate = new Date().toISOString();
+    settings.backup.lastAutoBackupDate = new Date().toISOString();
+    settings.backup.lastAutoBackupStatus = `✅ Succès - ${filename}`;
+    writeJson(settingsPath, settings);
+
+  } catch (error) {
+    console.error('[Auto-Backup] ❌ Erreur:', error.message);
+    try {
+      const settings = readJson(settingsPath) || {};
+      settings.backup = settings.backup || {};
+      settings.backup.lastAutoBackupStatus = `❌ Échec: ${error.message}`;
+      writeJson(settingsPath, settings);
+    } catch {}
+  }
+}
+
+// Schedule auto-backup every day at 22:00
+cron.schedule('0 22 * * *', () => {
+  console.log('[Auto-Backup] 🕙 Lancement de la sauvegarde automatique...');
+  performAutoBackup();
+}, {
+  timezone: 'Indian/Reunion'
+});
+
+// ==================
+// POST /api/settings/auto-backup-config - Configure auto-backup
+// ==================
+router.post('/auto-backup-config', authMiddleware, (req, res) => {
+  try {
+    if (!isAdmin(req.user)) {
+      return res.status(403).json({ message: 'Accès refusé. Administrateur requis.' });
+    }
+
+    const { autoBackup, autoBackupEncryptionCode } = req.body;
+    const settings = readJson(settingsPath) || {};
+    settings.backup = settings.backup || {};
+
+    if (autoBackup !== undefined) {
+      settings.backup.autoBackup = autoBackup;
+    }
+    if (autoBackupEncryptionCode !== undefined) {
+      settings.backup.autoBackupEncryptionCode = autoBackupEncryptionCode;
+    }
+
+    writeJson(settingsPath, settings);
+    
+    // Return sanitized backup settings (don't expose encryption code)
+    const safeBackup = { ...settings.backup };
+    delete safeBackup.autoBackupEncryptionCode;
+    safeBackup.hasEncryptionCode = !!(settings.backup.autoBackupEncryptionCode && settings.backup.autoBackupEncryptionCode.length >= 6);
+
+    res.json({ success: true, backup: safeBackup });
+  } catch (error) {
+    console.error('Error configuring auto-backup:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+// ==================
+// POST /api/settings/auto-backup-now - Trigger manual auto-backup to Google Drive
+// ==================
+router.post('/auto-backup-now', authMiddleware, async (req, res) => {
+  try {
+    if (!isAdmin(req.user)) {
+      return res.status(403).json({ message: 'Accès refusé. Administrateur requis.' });
+    }
+    await performAutoBackup();
+    const settings = readJson(settingsPath) || {};
+    const safeBackup = { ...settings.backup };
+    delete safeBackup.autoBackupEncryptionCode;
+    safeBackup.hasEncryptionCode = !!(settings.backup.autoBackupEncryptionCode && settings.backup.autoBackupEncryptionCode.length >= 6);
+    res.json({ success: true, backup: safeBackup });
+  } catch (error) {
+    console.error('Error triggering auto-backup:', error);
+    res.status(500).json({ message: 'Erreur lors de la sauvegarde' });
   }
 });
 

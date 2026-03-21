@@ -28,6 +28,11 @@ export interface AppSettings {
     lastBackupDate: string | null;
     autoBackup: boolean;
     autoBackupIntervalDays: number;
+    autoBackupEncryptionCode?: string;
+    googleDriveFolderId?: string;
+    lastAutoBackupDate: string | null;
+    lastAutoBackupStatus: string | null;
+    hasEncryptionCode?: boolean;
   };
 }
 
@@ -59,6 +64,16 @@ const settingsApi = {
 
   async verifyPassword(password: string): Promise<{ valid: boolean }> {
     const response = await api.post('/api/settings/verify-password', { password });
+    return response.data;
+  },
+
+  async configureAutoBackup(data: { autoBackup?: boolean; autoBackupEncryptionCode?: string }): Promise<{ success: boolean; backup: any }> {
+    const response = await api.post('/api/settings/auto-backup-config', data);
+    return response.data;
+  },
+
+  async triggerAutoBackupNow(): Promise<{ success: boolean; backup: any }> {
+    const response = await api.post('/api/settings/auto-backup-now');
     return response.data;
   }
 };
