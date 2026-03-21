@@ -462,6 +462,111 @@ const ParametresSection: React.FC<ParametresSectionProps> = ({ userRole }) => {
             </motion.div>
           )}
 
+          {/* AUTO-BACKUP GOOGLE DRIVE SECTION */}
+          {isAdmin && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.25 }}
+              className="mt-8 pt-6 border-t border-border/50"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <Cloud className="w-4 h-4 text-blue-500" />
+                <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Sauvegarde automatique Google Drive</span>
+              </div>
+
+              <div className="rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10 border border-blue-200/30 dark:border-blue-800/20 p-4 space-y-4">
+                {/* Toggle */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {autoBackupEnabled ? <Cloud className="w-4 h-4 text-blue-500" /> : <CloudOff className="w-4 h-4 text-muted-foreground" />}
+                    <span className="text-sm font-semibold text-foreground">Sauvegarde automatique</span>
+                  </div>
+                  <button
+                    onClick={() => setAutoBackupEnabled(!autoBackupEnabled)}
+                    className={`relative w-11 h-6 rounded-full transition-all duration-300 ${autoBackupEnabled ? 'bg-gradient-to-r from-blue-500 to-indigo-500' : 'bg-muted'}`}
+                  >
+                    <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-300 ${autoBackupEnabled ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+                  </button>
+                </div>
+
+                {autoBackupEnabled && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Clock className="w-3 h-3" />
+                      <span>Sauvegarde quotidienne à <strong>22h00</strong> (heure La Réunion)</span>
+                    </div>
+
+                    {/* Encryption code */}
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">
+                        {hasEncryptionCode ? 'Modifier le code de cryptage' : 'Code de cryptage (obligatoire)'}
+                      </label>
+                      <div className="relative">
+                        <Input
+                          type={showAutoBackupCode ? 'text' : 'password'}
+                          value={autoBackupCode}
+                          onChange={e => setAutoBackupCode(e.target.value)}
+                          placeholder={hasEncryptionCode ? 'Laisser vide pour garder le code actuel' : 'Créez un code de cryptage (min 6 car.)'}
+                          autoComplete="new-password"
+                          data-lpignore="true"
+                          data-form-type="other"
+                          className="rounded-xl border-blue-200/30 dark:border-blue-800/20 pr-10 text-sm"
+                        />
+                        <button type="button" onClick={() => setShowAutoBackupCode(!showAutoBackupCode)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                          {showAutoBackupCode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                      {hasEncryptionCode && (
+                        <p className="text-xs text-emerald-600 mt-1">✅ Code de cryptage configuré</p>
+                      )}
+                    </div>
+
+                    {/* Status */}
+                    {autoBackupStatus && (
+                      <div className="rounded-lg bg-white/50 dark:bg-white/5 border border-border/50 p-2">
+                        <p className="text-xs text-muted-foreground">Dernier statut : <span className="font-semibold text-foreground">{autoBackupStatus}</span></p>
+                        {autoBackupLastDate && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Dernière sauvegarde auto : {new Date(autoBackupLastDate).toLocaleString('fr-FR')}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={handleSaveAutoBackupConfig}
+                        disabled={savingAutoBackup || (!hasEncryptionCode && autoBackupCode.length < 6)}
+                        size="sm"
+                        className="rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600 text-xs"
+                      >
+                        {savingAutoBackup ? 'Sauvegarde...' : '💾 Sauvegarder config'}
+                      </Button>
+                      <Button
+                        onClick={handleTriggerAutoBackup}
+                        disabled={triggeringBackup || !hasEncryptionCode}
+                        size="sm"
+                        variant="outline"
+                        className="rounded-xl border-blue-300/30 text-blue-600 dark:text-blue-400 text-xs"
+                      >
+                        <Send className="w-3 h-3 mr-1" />
+                        {triggeringBackup ? 'Envoi...' : 'Envoyer maintenant'}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {!autoBackupEnabled && (
+                  <p className="text-xs text-muted-foreground">
+                    Activez pour envoyer automatiquement une sauvegarde chiffrée sur Google Drive chaque jour à 22h00.
+                  </p>
+                )}
+              </div>
+            </motion.div>
+          )}
+
           {/* ROLE MANAGEMENT - Only for administrateur principale */}
           {isAdminPrincipal && (
             <motion.div
