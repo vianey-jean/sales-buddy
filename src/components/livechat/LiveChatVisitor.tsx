@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, Minimize2, Loader2, User, Smile, Heart, Pencil, Trash2, Check, XCircle, Phone, Video } from 'lucide-react';
+import { MessageCircle, X, Send, Minimize2, Loader2, User, Smile, Heart, Pencil, Trash2, Check, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useWebRTC } from './useWebRTC';
-import CallOverlay from './CallOverlay';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://server-gestion-ventes.onrender.com';
 
@@ -50,11 +48,6 @@ const LiveChatVisitor: React.FC<LiveChatVisitorProps> = ({ visitorNom, adminId, 
     `visitor_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
   );
 
-  const webrtc = useWebRTC({
-    myId: visitorId.current,
-    myName: pseudo.current,
-    myType: 'visitor',
-  });
 
   useEffect(() => {
     localStorage.setItem('livechat_visitor_id', visitorId.current);
@@ -124,14 +117,6 @@ const LiveChatVisitor: React.FC<LiveChatVisitorProps> = ({ visitorNom, adminId, 
         if (data.from === 'admin' && data.visitorId === visitorId.current) {
           setAdminTyping(data.isTyping);
         }
-      } catch {}
-    });
-
-    // WebRTC call signaling
-    es.addEventListener('call_signal', (e) => {
-      try {
-        const signal = JSON.parse(e.data);
-        webrtc.handleSignal(signal);
       } catch {}
     });
 
@@ -244,28 +229,9 @@ const LiveChatVisitor: React.FC<LiveChatVisitorProps> = ({ visitorNom, adminId, 
       initial={{ opacity: 0, y: 100, scale: 0.8 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 100, scale: 0.8 }}
-      className="fixed bottom-6 right-6 z-[9999] w-[360px] max-w-[calc(100vw-2rem)] h-[500px] max-h-[calc(100vh-6rem)] flex flex-col rounded-3xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.5)] border border-white/[0.1] relative"
+      className="fixed bottom-6 right-6 z-[9999] w-[360px] max-w-[calc(100vw-2rem)] h-[500px] max-h-[calc(100vh-6rem)] flex flex-col rounded-3xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.5)] border border-white/[0.1]"
       onClick={() => { setContextMenuId(null); setShowEmojis(false); }}
     >
-      {/* Call Overlay */}
-      <CallOverlay
-        callState={webrtc.callState}
-        callDirection={webrtc.callDirection}
-        callType={webrtc.callType}
-        remoteCallerName={webrtc.remoteCallerName}
-        isMuted={webrtc.isMuted}
-        isVideoOff={webrtc.isVideoOff}
-        callDuration={webrtc.callDuration}
-        localVideoRef={webrtc.localVideoRef}
-        remoteVideoRef={webrtc.remoteVideoRef}
-        incomingCall={webrtc.incomingCall}
-        onAnswer={webrtc.answerCall}
-        onReject={webrtc.rejectCall}
-        onEndCall={() => webrtc.endCall()}
-        onToggleMute={webrtc.toggleMute}
-        onToggleVideo={webrtc.toggleVideo}
-      />
-
       {/* Header */}
       <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 px-5 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -281,20 +247,6 @@ const LiveChatVisitor: React.FC<LiveChatVisitorProps> = ({ visitorNom, adminId, 
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <button
-            onClick={() => webrtc.startCall('admin', adminId, 'Admin', 'audio')}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-            title="Appel audio"
-          >
-            <Phone className="h-4 w-4 text-white" />
-          </button>
-          <button
-            onClick={() => webrtc.startCall('admin', adminId, 'Admin', 'video')}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-            title="Appel vidéo"
-          >
-            <Video className="h-4 w-4 text-white" />
-          </button>
           <button onClick={() => setIsMinimized(true)} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
             <Minimize2 className="h-4 w-4 text-white" />
           </button>
@@ -303,6 +255,7 @@ const LiveChatVisitor: React.FC<LiveChatVisitorProps> = ({ visitorNom, adminId, 
           </button>
         </div>
       </div>
+
 
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gradient-to-b from-slate-900 via-slate-900/95 to-slate-950">
@@ -320,6 +273,7 @@ const LiveChatVisitor: React.FC<LiveChatVisitorProps> = ({ visitorNom, adminId, 
             className={`flex ${msg.from === 'visitor' ? 'justify-end' : 'justify-start'} group relative`}
           >
             <div className="relative max-w-[80%]">
+              {/* Deleted message */}
               {msg.deleted ? (
                 <div className={`px-4 py-2.5 rounded-2xl text-sm italic ${
                   msg.from === 'visitor' 
@@ -332,6 +286,7 @@ const LiveChatVisitor: React.FC<LiveChatVisitorProps> = ({ visitorNom, adminId, 
                   </div>
                 </div>
               ) : editingId === msg.id ? (
+                /* Editing mode */
                 <div className="flex items-center gap-1">
                   <Input
                     value={editText}
@@ -360,6 +315,7 @@ const LiveChatVisitor: React.FC<LiveChatVisitorProps> = ({ visitorNom, adminId, 
                     </div>
                   </div>
 
+                  {/* Likes */}
                   {msg.likes && msg.likes.length > 0 && (
                     <div className={`flex ${msg.from === 'visitor' ? 'justify-end' : 'justify-start'} mt-0.5`}>
                       <span className="text-xs bg-white/[0.08] rounded-full px-2 py-0.5 flex items-center gap-0.5">
@@ -368,6 +324,7 @@ const LiveChatVisitor: React.FC<LiveChatVisitorProps> = ({ visitorNom, adminId, 
                     </div>
                   )}
 
+                  {/* Context menu */}
                   <AnimatePresence>
                     {contextMenuId === msg.id && (
                       <motion.div

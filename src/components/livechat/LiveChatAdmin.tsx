@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, Loader2, ChevronLeft, Users, Smile, Heart, Pencil, Trash2, Check, XCircle, UserCheck, AlertTriangle, Phone, Video } from 'lucide-react';
+import { MessageCircle, X, Send, Loader2, ChevronLeft, Users, Smile, Heart, Pencil, Trash2, Check, XCircle, UserCheck, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
-import { useWebRTC } from './useWebRTC';
-import CallOverlay from './CallOverlay';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://server-gestion-ventes.onrender.com';
 
@@ -107,19 +105,7 @@ const LiveChatAdmin: React.FC = () => {
   const isAdmin = user?.role === 'administrateur' || user?.role === 'administrateur principale';
 
   const token = localStorage.getItem('token');
-  const authHeadersRef = React.useRef<Record<string, string>>({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
-  React.useEffect(() => {
-    const t = localStorage.getItem('token');
-    authHeadersRef.current = { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' };
-  }, [token]);
-  const authHeaders = authHeadersRef.current;
-
-  const webrtc = useWebRTC({
-    myId: user?.id || '',
-    myName: user ? `${user.firstName} ${user.lastName}` : '',
-    myType: 'admin',
-    authHeaders,
-  });
+  const authHeaders = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
 
   // ========== VISITOR CHAT FUNCTIONS ==========
   const loadConversations = useCallback(async () => {
@@ -312,14 +298,6 @@ const LiveChatAdmin: React.FC = () => {
       try {
         const data = JSON.parse(e.data);
         setAdminMessages(prev => prev.filter(m => m.id !== data.id));
-      } catch {}
-    });
-
-    // WebRTC call signaling
-    es.addEventListener('call_signal', (e) => {
-      try {
-        const signal = JSON.parse(e.data);
-        webrtc.handleSignal(signal);
       } catch {}
     });
 
@@ -540,28 +518,9 @@ const LiveChatAdmin: React.FC = () => {
     <motion.div
       initial={{ opacity: 0, y: 100, scale: 0.8 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      className="fixed bottom-6 right-6 z-[9999] w-[400px] max-w-[calc(100vw-2rem)] h-[560px] max-h-[calc(100vh-6rem)] flex flex-col rounded-3xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.5)] border border-white/[0.1] relative"
+      className="fixed bottom-6 right-6 z-[9999] w-[400px] max-w-[calc(100vw-2rem)] h-[560px] max-h-[calc(100vh-6rem)] flex flex-col rounded-3xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.5)] border border-white/[0.1]"
       onClick={() => { setContextMenuId(null); setShowEmojis(false); }}
     >
-      {/* Call Overlay */}
-      <CallOverlay
-        callState={webrtc.callState}
-        callDirection={webrtc.callDirection}
-        callType={webrtc.callType}
-        remoteCallerName={webrtc.remoteCallerName}
-        isMuted={webrtc.isMuted}
-        isVideoOff={webrtc.isVideoOff}
-        callDuration={webrtc.callDuration}
-        localVideoRef={webrtc.localVideoRef}
-        remoteVideoRef={webrtc.remoteVideoRef}
-        incomingCall={webrtc.incomingCall}
-        onAnswer={webrtc.answerCall}
-        onReject={webrtc.rejectCall}
-        onEndCall={() => webrtc.endCall()}
-        onToggleMute={webrtc.toggleMute}
-        onToggleVideo={webrtc.toggleVideo}
-      />
-
       {/* Header */}
       <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 px-5 py-4 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
@@ -576,40 +535,6 @@ const LiveChatAdmin: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-1">
-          {isInChat && (
-            <>
-              <button
-                onClick={() => {
-                  if (selectedConv) {
-                    const conv = conversations.find(c => c.visitorId === selectedConv);
-                    webrtc.startCall('visitor', selectedConv, conv?.visitorNom || 'Visiteur', 'audio');
-                  } else if (selectedAdmin) {
-                    const admin = adminUsers.find(a => a.id === selectedAdmin);
-                    webrtc.startCall('admin', selectedAdmin, `${admin?.firstName} ${admin?.lastName}`, 'audio');
-                  }
-                }}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                title="Appel audio"
-              >
-                <Phone className="h-4 w-4 text-white" />
-              </button>
-              <button
-                onClick={() => {
-                  if (selectedConv) {
-                    const conv = conversations.find(c => c.visitorId === selectedConv);
-                    webrtc.startCall('visitor', selectedConv, conv?.visitorNom || 'Visiteur', 'video');
-                  } else if (selectedAdmin) {
-                    const admin = adminUsers.find(a => a.id === selectedAdmin);
-                    webrtc.startCall('admin', selectedAdmin, `${admin?.firstName} ${admin?.lastName}`, 'video');
-                  }
-                }}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                title="Appel vidéo"
-              >
-                <Video className="h-4 w-4 text-white" />
-              </button>
-            </>
-          )}
           <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
             <X className="h-4 w-4 text-white" />
           </button>
