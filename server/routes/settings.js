@@ -55,6 +55,10 @@ const DEFAULT_SETTINGS = {
     lastBackupDate: null,
     autoBackup: false,
     autoBackupIntervalDays: 7,
+    autoBackupEncryptionCode: '',
+    googleDriveFolderId: '1X8VuDHGmIY9-m7PuiIMDIX4bAqoNjdPU',
+    lastAutoBackupDate: null,
+    lastAutoBackupStatus: null,
   },
 };
 
