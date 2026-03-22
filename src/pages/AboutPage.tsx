@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import PremiumLoading from '@/components/ui/premium-loading';
 import { Users, Target, Lightbulb, Award, ArrowRight } from 'lucide-react';
+import SEOHead from '@/components/SEOHead';
 
 const AboutPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
