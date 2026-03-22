@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/contexts/AuthContext';
-import PremiumLoading from '@/components/ui/premium-loading';
 import { ArrowRight, BarChart3, Shield, Zap, TrendingUp } from 'lucide-react';
 import { motion } from "framer-motion";
 import SEOHead from '@/components/SEOHead';
