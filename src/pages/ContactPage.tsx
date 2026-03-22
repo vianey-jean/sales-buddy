@@ -11,6 +11,7 @@ import Layout from '@/components/Layout';
 import { useMessages } from '@/hooks/use-messages';
 import { motion, AnimatePresence } from "framer-motion";
 import LiveChatVisitor from '@/components/livechat/LiveChatVisitor';
+import SEOHead from '@/components/SEOHead';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://server-gestion-ventes.onrender.com';
 
