@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
+import SEOHead from '@/components/SEOHead';
 
 const AUTH_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://server-gestion-ventes.onrender.com';
 
@@ -132,6 +133,11 @@ const LoginPage: React.FC = () => {
 
   return (
     <Layout>
+      <SEOHead
+        title="Connexion"
+        description="Connectez-vous à votre espace Gestion Vente. Accédez à vos ventes, stocks et comptabilité en toute sécurité."
+        canonical="https://riziky-boutic.vercel.app/login"
+      />
       <div className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden">
         {/* Ultra-luxe animated background */}
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-950 to-indigo-950" />

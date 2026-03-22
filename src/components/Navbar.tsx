@@ -21,11 +21,8 @@ import {
   Sun,
   Menu,
   X,
-  ChevronDown,
   Sparkles,
   Crown,
-  Diamond,
-  Gem,
 } from 'lucide-react';
  import { cn } from '@/lib/utils';
  
@@ -76,10 +73,10 @@ import {
                  className="relative"
                >
                  <div className="absolute -inset-2 bg-gradient-to-r from-violet-500/20 to-fuchsia-500/20 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-all duration-500" />
-                 <img
-                   src="/images/logo.ico"
-                   alt="Logo"
-                    className="relative h-10 w-auto sm:h-12 md:h-14 lg:h-16 object-contain max-w-[160px]"
+                  <img
+                    src="/images/logo.ico"
+                    alt="Gestion Vente - Logo de l'application de gestion commerciale"
+                     className="relative h-10 w-auto sm:h-12 md:h-14 lg:h-16 object-contain max-w-[160px]"
                  />
                </motion.div>
              </Link>

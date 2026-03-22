@@ -12,3 +12,13 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /dashboard
+Disallow: /profile
+Disallow: /messages
+Disallow: /clients
+Disallow: /commandes
+Disallow: /rdv
+Disallow: /produits
+Disallow: /pointage
+
+Sitemap: https://riziky-boutic.vercel.app/sitemap.xml

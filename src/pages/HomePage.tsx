@@ -1,32 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/contexts/AuthContext';
-import PremiumLoading from '@/components/ui/premium-loading';
 import { ArrowRight, BarChart3, Shield, Zap, TrendingUp } from 'lucide-react';
 import { motion } from "framer-motion";
+import SEOHead from '@/components/SEOHead';
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1200);
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (isLoading) {
-    return (
-      <Layout>
-        <PremiumLoading text="Bienvenue sur Gestion Ventes" size="xl" overlay variant="default" />
-      </Layout>
-    );
-  }
 
   return (
     <Layout>
+      <SEOHead
+        title="Accueil"
+        description="Gestion Vente : solution premium de gestion commerciale. Pilotez vos ventes, stocks et profits avec précision et élégance."
+        canonical="https://riziky-boutic.vercel.app/"
+      />
       <div className="relative overflow-hidden">
         {/* ================= HERO ================= */}
         <div className="relative min-h-screen flex items-center bg-gradient-to-br from-[#030014] via-[#0a0020] to-[#0e0030]">
