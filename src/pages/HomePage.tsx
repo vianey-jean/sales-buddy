@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import PremiumLoading from '@/components/ui/premium-loading';
 import { ArrowRight, BarChart3, Shield, Zap, TrendingUp } from 'lucide-react';
 import { motion } from "framer-motion";
+import SEOHead from '@/components/SEOHead';
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
