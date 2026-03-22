@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import {
   Settings, Trash2, Upload, Download, Shield, Eye, EyeOff, AlertTriangle,
  ChevronDown, ChevronUp,
-  UserCog, ArrowUpCircle, ArrowDownCircle, CalendarOff, Radio, Cloud, CloudOff, Clock, Send
+  UserCog, ArrowUpCircle, ArrowDownCircle, CalendarOff, Radio
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -57,16 +57,6 @@ const ParametresSection: React.FC<ParametresSectionProps> = ({ userRole }) => {
   const [isBackupCodeValid, setIsBackupCodeValid] = useState(false);
   const [backingUp, setBackingUp] = useState(false);
 
-  // Auto-backup state
-  const [autoBackupEnabled, setAutoBackupEnabled] = useState(false);
-  const [autoBackupCode, setAutoBackupCode] = useState('');
-  const [showAutoBackupCode, setShowAutoBackupCode] = useState(false);
-  const [savingAutoBackup, setSavingAutoBackup] = useState(false);
-  const [triggeringBackup, setTriggeringBackup] = useState(false);
-  const [autoBackupStatus, setAutoBackupStatus] = useState<string | null>(null);
-  const [autoBackupLastDate, setAutoBackupLastDate] = useState<string | null>(null);
-  const [hasEncryptionCode, setHasEncryptionCode] = useState(false);
-
   // Restore state
   const [showRestoreDialog, setShowRestoreDialog] = useState(false);
   const [restoreCode, setRestoreCode] = useState('');
@@ -102,13 +92,14 @@ const ParametresSection: React.FC<ParametresSectionProps> = ({ userRole }) => {
     notifications: { rdvReminder: true, rdvReminderMinutes: 30, tacheReminder: true, emailNotifications: false, soundEnabled: true },
     display: { itemsPerPage: 10, theme: 'system', compactMode: false, showWelcomeMessage: true },
     security: { sessionTimeoutMinutes: 60, maxLoginAttempts: 5, requireStrongPassword: true },
-    backup: { lastBackupDate: null, autoBackup: false, autoBackupIntervalDays: 7, lastAutoBackupDate: null, lastAutoBackupStatus: null },
+    backup: { lastBackupDate: null, autoBackup: false, autoBackupIntervalDays: 7 },
   };
 
   const fetchSettings = async () => {
     try {
       setLoading(true);
       const result = await settingsApi.getSettings();
+      // Merge with defaults to prevent undefined nested objects
       const merged: AppSettings = {
         ...defaultSettings,
         ...result.settings,
@@ -119,11 +110,6 @@ const ParametresSection: React.FC<ParametresSectionProps> = ({ userRole }) => {
       };
       setSettings(merged);
       setIsAdminFromServer(result.isAdmin);
-      // Set auto-backup state from settings
-      setAutoBackupEnabled(merged.backup.autoBackup || false);
-      setAutoBackupStatus(merged.backup.lastAutoBackupStatus || null);
-      setAutoBackupLastDate(merged.backup.lastAutoBackupDate || null);
-      setHasEncryptionCode(merged.backup.hasEncryptionCode || false);
     } catch (e) {
       console.error('Error fetching settings:', e);
       setSettings(defaultSettings);
@@ -261,44 +247,6 @@ const ParametresSection: React.FC<ParametresSectionProps> = ({ userRole }) => {
       toast({ title: 'Erreur', description: 'Échec de la sauvegarde', variant: 'destructive' });
     } finally {
       setBackingUp(false);
-    }
-  };
-
-  // ========== AUTO-BACKUP CONFIG ==========
-  const handleSaveAutoBackupConfig = async () => {
-    try {
-      setSavingAutoBackup(true);
-      const result = await settingsApi.configureAutoBackup({
-        autoBackup: autoBackupEnabled,
-        autoBackupEncryptionCode: autoBackupCode || undefined,
-      });
-      if (result.success) {
-        toast({ title: '✅ Configuration sauvegardée', description: autoBackupEnabled ? 'Sauvegarde auto activée (chaque jour à 22h00)' : 'Sauvegarde auto désactivée', className: 'bg-green-600 text-white border-green-600' });
-        setAutoBackupStatus(result.backup.lastAutoBackupStatus || null);
-        setAutoBackupLastDate(result.backup.lastAutoBackupDate || null);
-        setHasEncryptionCode(result.backup.hasEncryptionCode || false);
-        setAutoBackupCode('');
-      }
-    } catch (e) {
-      toast({ title: 'Erreur', description: 'Impossible de sauvegarder la configuration', variant: 'destructive' });
-    } finally {
-      setSavingAutoBackup(false);
-    }
-  };
-
-  const handleTriggerAutoBackup = async () => {
-    try {
-      setTriggeringBackup(true);
-      const result = await settingsApi.triggerAutoBackupNow();
-      if (result.success) {
-        toast({ title: '✅ Sauvegarde envoyée', description: 'Fichier uploadé sur Google Drive', className: 'bg-green-600 text-white border-green-600' });
-        setAutoBackupStatus(result.backup.lastAutoBackupStatus || null);
-        setAutoBackupLastDate(result.backup.lastAutoBackupDate || null);
-      }
-    } catch (e) {
-      toast({ title: 'Erreur', description: 'Échec de la sauvegarde automatique', variant: 'destructive' });
-    } finally {
-      setTriggeringBackup(false);
     }
   };
 
@@ -457,111 +405,6 @@ const ParametresSection: React.FC<ParametresSectionProps> = ({ userRole }) => {
                     <Trash2 className="w-4 h-4 mr-2" />
                     Supprimer tout
                   </Button>
-                )}
-              </div>
-            </motion.div>
-          )}
-
-          {/* AUTO-BACKUP GOOGLE DRIVE SECTION */}
-          {isAdmin && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.25 }}
-              className="mt-8 pt-6 border-t border-border/50"
-            >
-              <div className="flex items-center gap-2 mb-4">
-                <Cloud className="w-4 h-4 text-blue-500" />
-                <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Sauvegarde automatique Google Drive</span>
-              </div>
-
-              <div className="rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10 border border-blue-200/30 dark:border-blue-800/20 p-4 space-y-4">
-                {/* Toggle */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {autoBackupEnabled ? <Cloud className="w-4 h-4 text-blue-500" /> : <CloudOff className="w-4 h-4 text-muted-foreground" />}
-                    <span className="text-sm font-semibold text-foreground">Sauvegarde automatique</span>
-                  </div>
-                  <button
-                    onClick={() => setAutoBackupEnabled(!autoBackupEnabled)}
-                    className={`relative w-11 h-6 rounded-full transition-all duration-300 ${autoBackupEnabled ? 'bg-gradient-to-r from-blue-500 to-indigo-500' : 'bg-muted'}`}
-                  >
-                    <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-300 ${autoBackupEnabled ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
-                  </button>
-                </div>
-
-                {autoBackupEnabled && (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Clock className="w-3 h-3" />
-                      <span>Sauvegarde quotidienne à <strong>22h00</strong> (heure La Réunion)</span>
-                    </div>
-
-                    {/* Encryption code */}
-                    <div>
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">
-                        {hasEncryptionCode ? 'Modifier le code de cryptage' : 'Code de cryptage (obligatoire)'}
-                      </label>
-                      <div className="relative">
-                        <Input
-                          type={showAutoBackupCode ? 'text' : 'password'}
-                          value={autoBackupCode}
-                          onChange={e => setAutoBackupCode(e.target.value)}
-                          placeholder={hasEncryptionCode ? 'Laisser vide pour garder le code actuel' : 'Créez un code de cryptage (min 6 car.)'}
-                          autoComplete="new-password"
-                          data-lpignore="true"
-                          data-form-type="other"
-                          className="rounded-xl border-blue-200/30 dark:border-blue-800/20 pr-10 text-sm"
-                        />
-                        <button type="button" onClick={() => setShowAutoBackupCode(!showAutoBackupCode)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                          {showAutoBackupCode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                      </div>
-                      {hasEncryptionCode && (
-                        <p className="text-xs text-emerald-600 mt-1">✅ Code de cryptage configuré</p>
-                      )}
-                    </div>
-
-                    {/* Status */}
-                    {autoBackupStatus && (
-                      <div className="rounded-lg bg-white/50 dark:bg-white/5 border border-border/50 p-2">
-                        <p className="text-xs text-muted-foreground">Dernier statut : <span className="font-semibold text-foreground">{autoBackupStatus}</span></p>
-                        {autoBackupLastDate && (
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            Dernière sauvegarde auto : {new Date(autoBackupLastDate).toLocaleString('fr-FR')}
-                          </p>
-                        )}
-                      </div>
-                    )}
-
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={handleSaveAutoBackupConfig}
-                        disabled={savingAutoBackup || (!hasEncryptionCode && autoBackupCode.length < 6)}
-                        size="sm"
-                        className="rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600 text-xs"
-                      >
-                        {savingAutoBackup ? 'Sauvegarde...' : '💾 Sauvegarder config'}
-                      </Button>
-                      <Button
-                        onClick={handleTriggerAutoBackup}
-                        disabled={triggeringBackup || !hasEncryptionCode}
-                        size="sm"
-                        variant="outline"
-                        className="rounded-xl border-blue-300/30 text-blue-600 dark:text-blue-400 text-xs"
-                      >
-                        <Send className="w-3 h-3 mr-1" />
-                        {triggeringBackup ? 'Envoi...' : 'Envoyer maintenant'}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {!autoBackupEnabled && (
-                  <p className="text-xs text-muted-foreground">
-                    Activez pour envoyer automatiquement une sauvegarde chiffrée sur Google Drive chaque jour à 22h00.
-                  </p>
                 )}
               </div>
             </motion.div>
