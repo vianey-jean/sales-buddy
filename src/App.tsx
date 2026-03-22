@@ -149,6 +149,7 @@ function App() {
                 </Suspense>
               </Router>
               <Toaster />
+              <CookieConsent />
             </AppProvider>
           </AuthProvider>
         </AccessibilityProvider>
