@@ -21,11 +21,8 @@ import {
   Sun,
   Menu,
   X,
-  ChevronDown,
   Sparkles,
   Crown,
-  Diamond,
-  Gem,
 } from 'lucide-react';
  import { cn } from '@/lib/utils';
  
