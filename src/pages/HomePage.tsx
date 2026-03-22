@@ -11,20 +11,6 @@ import SEOHead from '@/components/SEOHead';
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1200);
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (isLoading) {
-    return (
-      <Layout>
-        <PremiumLoading text="Bienvenue sur Gestion Ventes" size="xl" overlay variant="default" />
-      </Layout>
-    );
-  }
 
   return (
     <Layout>
