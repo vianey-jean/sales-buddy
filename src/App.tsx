@@ -18,6 +18,7 @@ import { AccessibilityProvider } from '@/components/accessibility/AccessibilityP
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { Toaster } from '@/components/ui/toaster';
+import CookieConsent from '@/components/CookieConsent';
 
 // Fallback pendant chargement des pages
 import PremiumLoading from '@/components/ui/premium-loading';
