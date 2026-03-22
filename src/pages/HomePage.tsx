@@ -28,6 +28,11 @@ const HomePage: React.FC = () => {
 
   return (
     <Layout>
+      <SEOHead
+        title="Accueil"
+        description="Gestion Vente : solution premium de gestion commerciale. Pilotez vos ventes, stocks et profits avec précision et élégance."
+        canonical="https://riziky-boutic.vercel.app/"
+      />
       <div className="relative overflow-hidden">
         {/* ================= HERO ================= */}
         <div className="relative min-h-screen flex items-center bg-gradient-to-br from-[#030014] via-[#0a0020] to-[#0e0030]">

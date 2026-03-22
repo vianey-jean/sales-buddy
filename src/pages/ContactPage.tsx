@@ -157,6 +157,11 @@ const ContactPage: React.FC = () => {
 
   return (
     <Layout>
+      <SEOHead
+        title="Contact"
+        description="Contactez l'équipe Gestion Vente. Support technique, partenariat ou consultation - nous répondons sous 24h."
+        canonical="https://riziky-boutic.vercel.app/contact"
+      />
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950/50 to-indigo-950 relative">
         {/* Background effects */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none">

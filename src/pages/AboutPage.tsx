@@ -30,6 +30,11 @@ const AboutPage: React.FC = () => {
 
   return (
     <Layout>
+      <SEOHead
+        title="À propos"
+        description="Découvrez l'histoire de Gestion Vente, notre mission de transformer la gestion commerciale avec des solutions innovantes et intuitives."
+        canonical="https://riziky-boutic.vercel.app/about"
+      />
       <div className="relative overflow-hidden">
         {/* Hero section */}
         <div className="relative bg-gradient-to-br from-indigo-950 via-purple-900 to-pink-900 py-12 sm:py-16 md:py-24">
