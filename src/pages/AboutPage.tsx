@@ -5,28 +5,6 @@ import { Users, Target, Lightbulb, Award, ArrowRight } from 'lucide-react';
 import SEOHead from '@/components/SEOHead';
 
 const AboutPage: React.FC = () => {
-  const [isLoading, setIsLoading] = useState(true);
-  
-  // Simulate initial page load
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1200);
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (isLoading) {
-    return (
-      <Layout>
-        <PremiumLoading 
-          text="Découvrez Notre Histoire"
-          size="lg"
-          overlay={true}
-          variant="default"
-        />
-      </Layout>
-    );
-  }
 
   return (
     <Layout>
