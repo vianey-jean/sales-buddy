@@ -16,6 +16,7 @@ interface KanbanColumnProps {
   onEditColumn: () => void;
   onDeleteColumn: () => void;
   isDragOver: boolean;
+  onNoteUpdated?: () => void;
 }
 
 const KanbanColumn: React.FC<KanbanColumnProps> = ({
