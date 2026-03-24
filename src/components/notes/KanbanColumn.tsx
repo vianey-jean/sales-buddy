@@ -21,7 +21,7 @@ interface KanbanColumnProps {
 
 const KanbanColumn: React.FC<KanbanColumnProps> = ({
   column, notes, onAddNote, onEditNote, onDeleteNote,
-  onDragStart, onDragOver, onDrop, onEditColumn, onDeleteColumn, isDragOver
+  onDragStart, onDragOver, onDrop, onEditColumn, onDeleteColumn, isDragOver, onNoteUpdated
 }) => {
   const [showColMenu, setShowColMenu] = useState(false);
   const [dropIndicatorIndex, setDropIndicatorIndex] = useState<number | null>(null);
