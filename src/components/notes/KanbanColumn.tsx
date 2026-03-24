@@ -16,11 +16,12 @@ interface KanbanColumnProps {
   onEditColumn: () => void;
   onDeleteColumn: () => void;
   isDragOver: boolean;
+  onNoteUpdated?: () => void;
 }
 
 const KanbanColumn: React.FC<KanbanColumnProps> = ({
   column, notes, onAddNote, onEditNote, onDeleteNote,
-  onDragStart, onDragOver, onDrop, onEditColumn, onDeleteColumn, isDragOver
+  onDragStart, onDragOver, onDrop, onEditColumn, onDeleteColumn, isDragOver, onNoteUpdated
 }) => {
   const [showColMenu, setShowColMenu] = useState(false);
   const [dropIndicatorIndex, setDropIndicatorIndex] = useState<number | null>(null);
@@ -123,6 +124,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
                     onEdit={() => onEditNote(note)}
                     onDelete={() => onDeleteNote(note.id)}
                     onDragStart={(e) => onDragStart(e, note.id)}
+                    onNoteUpdated={onNoteUpdated}
                   />
                 </div>
               </div>

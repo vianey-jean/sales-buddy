@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { GripVertical, Edit3, Trash2, Mic, X, Eye, ArrowRight, Clock, MapPin } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { GripVertical, Edit3, Trash2, Mic, X, Eye, ArrowRight, Clock, MapPin, GripHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Note, NoteHistoryEntry, getDrawingUrl } from '@/services/api/noteApi';
+import noteApi from '@/services/api/noteApi';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 const HISTORY_COLORS = [
   { bg: 'bg-red-500/10', text: 'text-red-600 dark:text-red-400', dot: 'bg-red-500', border: 'border-red-200 dark:border-red-800' },
@@ -14,10 +16,6 @@ const HISTORY_COLORS = [
   { bg: 'bg-pink-500/10', text: 'text-pink-600 dark:text-pink-400', dot: 'bg-pink-500', border: 'border-pink-200 dark:border-pink-800' },
 ];
 
-const formatShortDate = (dateStr: string) => {
-  return new Date(dateStr).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-};
-
 const formatFullDate = (dateStr: string) => {
   return new Date(dateStr).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 };
@@ -27,13 +25,28 @@ interface NoteCardProps {
   onEdit: () => void;
   onDelete: () => void;
   onDragStart: (e: React.DragEvent) => void;
+  onNoteUpdated?: () => void;
 }
 
-const NoteCard: React.FC<NoteCardProps> = ({ note, onEdit, onDelete, onDragStart }) => {
+const NoteCard: React.FC<NoteCardProps> = ({ note, onEdit, onDelete, onDragStart, onNoteUpdated }) => {
+  const { toast } = useToast();
   const [showDetail, setShowDetail] = useState(false);
   const [confirmAction, setConfirmAction] = useState<'edit' | 'delete' | null>(null);
+  const [localHistory, setLocalHistory] = useState<NoteHistoryEntry[]>([]);
+  const [historyDragIndex, setHistoryDragIndex] = useState<number | null>(null);
+  const [historyDropIndex, setHistoryDropIndex] = useState<number | null>(null);
+  const [confirmDeleteHistory, setConfirmDeleteHistory] = useState<number | null>(null);
 
   const drawingUrl = getDrawingUrl(note.drawing);
+
+  // Sync local history when detail opens
+  const handleOpenDetail = () => {
+    setLocalHistory([...(note.history || [])]);
+    setShowDetail(true);
+    setConfirmDeleteHistory(null);
+    setHistoryDragIndex(null);
+    setHistoryDropIndex(null);
+  };
 
   const handleConfirm = () => {
     if (confirmAction === 'edit') {
@@ -45,12 +58,77 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onEdit, onDelete, onDragStart
     setShowDetail(false);
   };
 
+  // History drag and drop
+  const handleHistoryDragStart = (e: React.DragEvent, index: number) => {
+    e.stopPropagation();
+    e.dataTransfer.setData('historyIndex', index.toString());
+    e.dataTransfer.effectAllowed = 'move';
+    setHistoryDragIndex(index);
+  };
+
+  const handleHistoryDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setHistoryDropIndex(index);
+  };
+
+  const handleHistoryDrop = async (e: React.DragEvent, dropIdx: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const dragIdx = parseInt(e.dataTransfer.getData('historyIndex'));
+    setHistoryDragIndex(null);
+    setHistoryDropIndex(null);
+
+    if (isNaN(dragIdx) || dragIdx === dropIdx) return;
+
+    const newHistory = [...localHistory];
+    const [moved] = newHistory.splice(dragIdx, 1);
+    newHistory.splice(dropIdx, 0, moved);
+    setLocalHistory(newHistory);
+
+    // Save to DB
+    try {
+      await noteApi.update(note.id, { history: newHistory });
+      toast({ title: '✅ Parcours réorganisé' });
+      onNoteUpdated?.();
+    } catch {
+      toast({ title: 'Erreur', variant: 'destructive' });
+      setLocalHistory([...(note.history || [])]);
+    }
+  };
+
+  const handleHistoryDragEnd = () => {
+    setHistoryDragIndex(null);
+    setHistoryDropIndex(null);
+  };
+
+  // Delete a history entry
+  const handleDeleteHistoryEntry = async (index: number) => {
+    if (localHistory.length <= 1) {
+      toast({ title: '⚠️ Impossible', description: 'Il faut garder au moins un parcours' });
+      return;
+    }
+
+    const newHistory = localHistory.filter((_, i) => i !== index);
+    setLocalHistory(newHistory);
+    setConfirmDeleteHistory(null);
+
+    try {
+      await noteApi.update(note.id, { history: newHistory });
+      toast({ title: '✅ Parcours supprimé' });
+      onNoteUpdated?.();
+    } catch {
+      toast({ title: 'Erreur', variant: 'destructive' });
+      setLocalHistory([...(note.history || [])]);
+    }
+  };
+
   return (
     <>
       <div
         draggable
         onDragStart={onDragStart}
-        onClick={() => setShowDetail(true)}
+        onClick={handleOpenDetail}
         className="group relative rounded-2xl border border-white/30 dark:border-white/10 backdrop-blur-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer hover:scale-[1.02]"
         style={{ backgroundColor: note.color === '#ffffff' ? 'rgba(255,255,255,0.9)' : note.color + 'e6' }}
       >
@@ -160,24 +238,44 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onEdit, onDelete, onDragStart
               </div>
             )}
 
-            {/* Full history timeline in detail */}
-            {note.history && note.history.length > 0 && (
+            {/* Full history timeline with drag-drop and delete */}
+            {localHistory && localHistory.length > 0 && (
               <div className="p-4 rounded-2xl bg-gradient-to-br from-gray-50/80 to-slate-50/80 dark:from-gray-800/40 dark:to-slate-800/40 border border-gray-200/50 dark:border-gray-700/50">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
                     <MapPin className="h-3 w-3 text-white" />
                   </div>
                   <span className="text-xs font-bold text-gray-700 dark:text-gray-200">Parcours de la note</span>
+                  <span className="text-[10px] text-gray-400 ml-auto">Glissez pour réorganiser</span>
                 </div>
                 <div className="relative pl-4">
                   {/* Vertical line */}
                   <div className="absolute left-[7px] top-1 bottom-1 w-0.5 bg-gradient-to-b from-cyan-400 via-blue-400 to-violet-400 rounded-full" />
                   <div className="space-y-3">
-                    {note.history.map((h, i) => {
+                    {localHistory.map((h, i) => {
                       const color = HISTORY_COLORS[i % HISTORY_COLORS.length];
-                      const isLast = i === note.history.length - 1;
+                      const isLast = i === localHistory.length - 1;
+                      const isDragging = historyDragIndex === i;
+                      const isDropTarget = historyDropIndex === i;
+
                       return (
-                        <div key={i} className="relative flex items-start gap-3">
+                        <div
+                          key={i}
+                          draggable
+                          onDragStart={(e) => handleHistoryDragStart(e, i)}
+                          onDragOver={(e) => handleHistoryDragOver(e, i)}
+                          onDrop={(e) => handleHistoryDrop(e, i)}
+                          onDragEnd={handleHistoryDragEnd}
+                          className={cn(
+                            "relative flex items-start gap-3 transition-all duration-200",
+                            isDragging && "opacity-40 scale-95",
+                            isDropTarget && "translate-y-1"
+                          )}
+                        >
+                          {/* Drop indicator */}
+                          {isDropTarget && historyDragIndex !== null && historyDragIndex !== i && (
+                            <div className="absolute -top-2 left-0 right-0 h-1 bg-cyan-400 rounded-full shadow-lg shadow-cyan-400/50 animate-pulse z-20" />
+                          )}
                           {/* Dot */}
                           <div className={cn(
                             "absolute -left-4 top-1 w-3.5 h-3.5 rounded-full border-2 border-white dark:border-gray-900 shadow-md z-10",
@@ -185,17 +283,54 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onEdit, onDelete, onDragStart
                             isLast && "ring-2 ring-offset-1 ring-offset-white dark:ring-offset-gray-900 ring-cyan-400/50 animate-pulse"
                           )} />
                           {/* Content */}
-                          <div className={cn("flex-1 p-2.5 rounded-xl border", color.bg, color.border)}>
+                          <div className={cn("flex-1 p-2.5 rounded-xl border cursor-grab active:cursor-grabbing group/history", color.bg, color.border)}>
                             <div className="flex items-center justify-between gap-2 flex-wrap">
-                              <span className={cn("text-xs font-bold", color.text)}>{h.columnTitle}</span>
-                              <div className="flex items-center gap-1 text-[10px] text-gray-500 dark:text-gray-400">
-                                <Clock className="h-2.5 w-2.5" />
-                                {formatFullDate(h.movedAt)}
+                              <div className="flex items-center gap-2">
+                                <GripHorizontal className="h-3 w-3 text-gray-400 opacity-50 group-hover/history:opacity-100 transition-opacity" />
+                                <span className={cn("text-xs font-bold", color.text)}>{h.columnTitle}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1 text-[10px] text-gray-500 dark:text-gray-400">
+                                  <Clock className="h-2.5 w-2.5" />
+                                  {formatFullDate(h.movedAt)}
+                                </div>
+                                {/* Delete button */}
+                                {confirmDeleteHistory === i ? (
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleDeleteHistoryEntry(i); }}
+                                      className="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-red-500 text-white hover:bg-red-600 transition-colors"
+                                    >
+                                      Oui
+                                    </button>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); setConfirmDeleteHistory(null); }}
+                                      className="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-400 transition-colors"
+                                    >
+                                      Non
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (localHistory.length <= 1) {
+                                        toast({ title: '⚠️ Impossible', description: 'Il faut garder au moins un parcours' });
+                                        return;
+                                      }
+                                      setConfirmDeleteHistory(i);
+                                    }}
+                                    className="p-0.5 rounded-md hover:bg-red-100 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover/history:opacity-100"
+                                    title="Supprimer ce parcours"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                )}
                               </div>
                             </div>
                             {i > 0 && (
                               <div className="mt-1 text-[10px] text-gray-400">
-                                Après {Math.round((new Date(h.movedAt).getTime() - new Date(note.history[i - 1].movedAt).getTime()) / (1000 * 60 * 60 * 24))} jour(s) en "{note.history[i - 1].columnTitle}"
+                                Après {Math.round((new Date(h.movedAt).getTime() - new Date(localHistory[i - 1].movedAt).getTime()) / (1000 * 60 * 60 * 24))} jour(s) en "{localHistory[i - 1].columnTitle}"
                               </div>
                             )}
                           </div>
