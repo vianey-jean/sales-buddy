@@ -124,6 +124,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
                     onEdit={() => onEditNote(note)}
                     onDelete={() => onDeleteNote(note.id)}
                     onDragStart={(e) => onDragStart(e, note.id)}
+                    onNoteUpdated={onNoteUpdated}
                   />
                 </div>
               </div>
