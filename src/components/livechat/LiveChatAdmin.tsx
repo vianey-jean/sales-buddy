@@ -227,6 +227,10 @@ const LiveChatAdmin: React.FC = () => {
             }).catch(() => {});
           }
         }
+        // Notification if chat closed or not viewing this conversation
+        if (msg.from === 'visitor' && (!isOpenRef.current || selectedConvRef.current !== msg.visitorId)) {
+          addNotification(msg.visitorNom || 'Visiteur', msg.contenu, msg.id);
+        }
         loadConversations();
       } catch {}
     });
