@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X, Send, Minimize2, Loader2, User, Smile, Heart, Pencil, Trash2, Check, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { playNotificationSound } from '@/hooks/use-chat-notification';
+import ChatNotificationBanner, { ChatNotifItem } from '@/components/livechat/ChatNotificationBanner';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://server-gestion-ventes.onrender.com';
 
@@ -38,9 +40,13 @@ const LiveChatVisitor: React.FC<LiveChatVisitorProps> = ({ visitorNom, adminId, 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
   const [contextMenuId, setContextMenuId] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState<ChatNotifItem[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
+  const isMinimizedRef = useRef(false);
+
+  useEffect(() => { isMinimizedRef.current = isMinimized; }, [isMinimized]);
 
   const pseudo = useRef(localStorage.getItem('livechat_pseudo') || visitorNom);
   const visitorId = useRef(
