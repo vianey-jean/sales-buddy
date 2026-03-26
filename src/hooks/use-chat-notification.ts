@@ -1,36 +1,36 @@
 import { useCallback, useRef } from 'react';
 
-// Facebook-like notification sound using Web Audio API
+// Luxurious chime notification sound using Web Audio API
 const playNotificationSound = () => {
   try {
     const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    
-    // First beep
-    const osc1 = ctx.createOscillator();
-    const gain1 = ctx.createGain();
-    osc1.connect(gain1);
-    gain1.connect(ctx.destination);
-    osc1.frequency.setValueAtTime(830, ctx.currentTime);
-    osc1.type = 'sine';
-    gain1.gain.setValueAtTime(0.3, ctx.currentTime);
-    gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
-    osc1.start(ctx.currentTime);
-    osc1.stop(ctx.currentTime + 0.15);
+    const t = ctx.currentTime;
 
-    // Second beep (higher pitch)
-    const osc2 = ctx.createOscillator();
-    const gain2 = ctx.createGain();
-    osc2.connect(gain2);
-    gain2.connect(ctx.destination);
-    osc2.frequency.setValueAtTime(1200, ctx.currentTime + 0.12);
-    osc2.type = 'sine';
-    gain2.gain.setValueAtTime(0.01, ctx.currentTime);
-    gain2.gain.setValueAtTime(0.3, ctx.currentTime + 0.12);
-    gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-    osc2.start(ctx.currentTime + 0.12);
-    osc2.stop(ctx.currentTime + 0.3);
+    // Helper to create a rich tone with harmonics
+    const playTone = (freq: number, start: number, duration: number, vol: number) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t + start);
+      gain.gain.setValueAtTime(0, t + start);
+      gain.gain.linearRampToValueAtTime(vol, t + start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + start + duration);
+      osc.start(t + start);
+      osc.stop(t + start + duration);
+    };
 
-    setTimeout(() => ctx.close(), 500);
+    // Three-note ascending chime (C6 → E6 → G6) — elegant & luxurious
+    playTone(1047, 0, 0.35, 0.18);      // C6
+    playTone(1319, 0.12, 0.35, 0.15);   // E6
+    playTone(1568, 0.24, 0.5, 0.2);     // G6
+
+    // Soft harmonic shimmer on the last note
+    playTone(3136, 0.24, 0.4, 0.04);    // G7 (octave above, very soft)
+    playTone(2093, 0.24, 0.45, 0.06);   // C7 (fifth shimmer)
+
+    setTimeout(() => ctx.close(), 1200);
   } catch (e) {
     console.warn('Could not play notification sound:', e);
   }
