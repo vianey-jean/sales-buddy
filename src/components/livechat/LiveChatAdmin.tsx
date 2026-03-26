@@ -4,6 +4,8 @@ import { MessageCircle, X, Send, Loader2, ChevronLeft, Users, Smile, Heart, Penc
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
+import { playNotificationSound } from '@/hooks/use-chat-notification';
+import ChatNotificationBanner, { ChatNotifItem } from '@/components/livechat/ChatNotificationBanner';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://server-gestion-ventes.onrender.com';
 
@@ -89,6 +91,7 @@ const LiveChatAdmin: React.FC = () => {
   const [editText, setEditText] = useState('');
   const [contextMenuId, setContextMenuId] = useState<string | null>(null);
   const [adminDeleteConfirm, setAdminDeleteConfirm] = useState<{ msgId: string; type: 'own' | 'other' } | null>(null);
+  const [notifications, setNotifications] = useState<ChatNotifItem[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -97,10 +100,23 @@ const LiveChatAdmin: React.FC = () => {
   const selectedAdminRef = useRef<string | null>(null);
   const messagesRef = useRef<ChatMessage[]>([]);
   const adminTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isOpenRef = useRef(false);
 
+  useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
   useEffect(() => { selectedConvRef.current = selectedConv; }, [selectedConv]);
   useEffect(() => { selectedAdminRef.current = selectedAdmin; }, [selectedAdmin]);
   useEffect(() => { messagesRef.current = messages; }, [messages]);
+
+  const addNotification = useCallback((sender: string, message: string, id?: string) => {
+    const notifId = id || `notif_${Date.now()}`;
+    playNotificationSound();
+    setNotifications(prev => [...prev, { id: notifId, sender, message: message.length > 60 ? message.substring(0, 60) + '...' : message, timestamp: Date.now() }]);
+    setTimeout(() => { setNotifications(prev => prev.filter(n => n.id !== notifId)); }, 5000);
+  }, []);
+
+  const dismissNotification = useCallback((id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  }, []);
 
   const isAdmin = user?.role === 'administrateur' || user?.role === 'administrateur principale';
 
@@ -211,6 +227,10 @@ const LiveChatAdmin: React.FC = () => {
             }).catch(() => {});
           }
         }
+        // Notification if chat closed or not viewing this conversation
+        if (msg.from === 'visitor' && (!isOpenRef.current || selectedConvRef.current !== msg.visitorId)) {
+          addNotification(msg.visitorNom || 'Visiteur', msg.contenu, msg.id);
+        }
         loadConversations();
       } catch {}
     });
@@ -221,6 +241,10 @@ const LiveChatAdmin: React.FC = () => {
         if (msg.adminId === user.id) {
           if (selectedConvRef.current === msg.visitorId) {
             setMessages(prev => prev.find(m => m.id === msg.id) ? prev : [...prev, msg]);
+          }
+          // Notification if chat closed or not viewing this conversation
+          if (msg.from === 'visitor' && (!isOpenRef.current || selectedConvRef.current !== msg.visitorId)) {
+            addNotification(msg.visitorNom || 'Visiteur', msg.contenu, msg.id);
           }
           loadConversations();
         }
@@ -269,6 +293,10 @@ const LiveChatAdmin: React.FC = () => {
               method: 'PUT', headers: authHeaders
             }).catch(() => {});
           }
+        }
+        // Notification if message from another admin and chat closed or not viewing
+        if (msg.senderId !== user.id && (!isOpenRef.current || selectedAdminRef.current !== msg.senderId)) {
+          addNotification(msg.senderName, msg.contenu, msg.id);
         }
         loadAdminConversations();
       } catch {}
@@ -482,19 +510,26 @@ const LiveChatAdmin: React.FC = () => {
 
   if (!isOpen) {
     return (
-      <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="fixed bottom-6 right-6 z-[9999]">
-        <button
-          onClick={() => { setIsOpen(true); loadConversations(); loadAdminUsers(); loadAdminConversations(); }}
-          className="relative p-4 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-full shadow-[0_8px_30px_rgba(139,92,246,0.5)] hover:scale-110 transition-transform"
-        >
-          <MessageCircle className="h-6 w-6 text-white" />
-          {allUnread > 0 && (
-            <span className="absolute -top-1 -right-1 min-w-[20px] h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center px-1 animate-pulse">
-              {allUnread}
-            </span>
-          )}
-        </button>
-      </motion.div>
+      <>
+        <ChatNotificationBanner
+          notifications={notifications}
+          onDismiss={dismissNotification}
+          onClick={() => { setIsOpen(true); setNotifications([]); loadConversations(); loadAdminUsers(); loadAdminConversations(); }}
+        />
+        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="fixed bottom-6 right-6 z-[9999]">
+          <button
+            onClick={() => { setIsOpen(true); setNotifications([]); loadConversations(); loadAdminUsers(); loadAdminConversations(); }}
+            className="relative p-4 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-full shadow-[0_8px_30px_rgba(139,92,246,0.5)] hover:scale-110 transition-transform"
+          >
+            <MessageCircle className="h-6 w-6 text-white" />
+            {allUnread > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[20px] h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center px-1 animate-pulse">
+                {allUnread}
+              </span>
+            )}
+          </button>
+        </motion.div>
+      </>
     );
   }
 

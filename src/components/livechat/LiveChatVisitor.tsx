@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X, Send, Minimize2, Loader2, User, Smile, Heart, Pencil, Trash2, Check, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { playNotificationSound } from '@/hooks/use-chat-notification';
+import ChatNotificationBanner, { ChatNotifItem } from '@/components/livechat/ChatNotificationBanner';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://server-gestion-ventes.onrender.com';
 
@@ -38,9 +40,13 @@ const LiveChatVisitor: React.FC<LiveChatVisitorProps> = ({ visitorNom, adminId, 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
   const [contextMenuId, setContextMenuId] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState<ChatNotifItem[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
+  const isMinimizedRef = useRef(false);
+
+  useEffect(() => { isMinimizedRef.current = isMinimized; }, [isMinimized]);
 
   const pseudo = useRef(localStorage.getItem('livechat_pseudo') || visitorNom);
   const visitorId = useRef(
@@ -81,6 +87,20 @@ const LiveChatVisitor: React.FC<LiveChatVisitorProps> = ({ visitorNom, adminId, 
             return [...prev, msg];
           });
           if (msg.from === 'admin') {
+            // Notification if minimized
+            if (isMinimizedRef.current) {
+              playNotificationSound();
+              setNotifications(prev => [...prev, {
+                id: msg.id,
+                sender: 'Admin',
+                message: msg.contenu,
+                timestamp: Date.now()
+              }]);
+              // Auto-dismiss after 5s
+              setTimeout(() => {
+                setNotifications(prev => prev.filter(n => n.id !== msg.id));
+              }, 5000);
+            }
             fetch(`${API_BASE}/api/messagerie/mark-read/${visitorId.current}/${adminId}`, {
               method: 'PUT', headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ reader: 'visitor' })
@@ -209,18 +229,29 @@ const LiveChatVisitor: React.FC<LiveChatVisitorProps> = ({ visitorNom, adminId, 
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
+  const dismissNotification = (id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
   if (isMinimized) {
     return (
-      <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="fixed bottom-6 right-6 z-[9999]">
-        <button onClick={() => setIsMinimized(false)} className="relative p-4 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-full shadow-[0_8px_30px_rgba(139,92,246,0.5)] hover:scale-110 transition-transform">
-          <MessageCircle className="h-6 w-6 text-white" />
-          {messages.filter(m => m.from === 'admin' && !m.lu).length > 0 && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center animate-pulse">
-              {messages.filter(m => m.from === 'admin' && !m.lu).length}
-            </span>
-          )}
-        </button>
-      </motion.div>
+      <>
+        <ChatNotificationBanner
+          notifications={notifications}
+          onDismiss={dismissNotification}
+          onClick={() => { setIsMinimized(false); setNotifications([]); }}
+        />
+        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="fixed bottom-6 right-6 z-[9999]">
+          <button onClick={() => { setIsMinimized(false); setNotifications([]); }} className="relative p-4 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-full shadow-[0_8px_30px_rgba(139,92,246,0.5)] hover:scale-110 transition-transform">
+            <MessageCircle className="h-6 w-6 text-white" />
+            {messages.filter(m => m.from === 'admin' && !m.lu).length > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center animate-pulse">
+                {messages.filter(m => m.from === 'admin' && !m.lu).length}
+              </span>
+            )}
+          </button>
+        </motion.div>
+      </>
     );
   }
 
