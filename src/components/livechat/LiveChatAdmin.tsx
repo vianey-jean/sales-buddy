@@ -4,6 +4,8 @@ import { MessageCircle, X, Send, Loader2, ChevronLeft, Users, Smile, Heart, Penc
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
+import { playNotificationSound } from '@/hooks/use-chat-notification';
+import ChatNotificationBanner, { ChatNotifItem } from '@/components/livechat/ChatNotificationBanner';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://server-gestion-ventes.onrender.com';
 
