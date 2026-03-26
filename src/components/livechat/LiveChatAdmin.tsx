@@ -294,6 +294,10 @@ const LiveChatAdmin: React.FC = () => {
             }).catch(() => {});
           }
         }
+        // Notification if message from another admin and chat closed or not viewing
+        if (msg.senderId !== user.id && (!isOpenRef.current || selectedAdminRef.current !== msg.senderId)) {
+          addNotification(msg.senderName, msg.contenu, msg.id);
+        }
         loadAdminConversations();
       } catch {}
     });
