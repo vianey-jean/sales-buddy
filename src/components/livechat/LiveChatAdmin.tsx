@@ -510,19 +510,26 @@ const LiveChatAdmin: React.FC = () => {
 
   if (!isOpen) {
     return (
-      <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="fixed bottom-6 right-6 z-[9999]">
-        <button
-          onClick={() => { setIsOpen(true); loadConversations(); loadAdminUsers(); loadAdminConversations(); }}
-          className="relative p-4 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-full shadow-[0_8px_30px_rgba(139,92,246,0.5)] hover:scale-110 transition-transform"
-        >
-          <MessageCircle className="h-6 w-6 text-white" />
-          {allUnread > 0 && (
-            <span className="absolute -top-1 -right-1 min-w-[20px] h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center px-1 animate-pulse">
-              {allUnread}
-            </span>
-          )}
-        </button>
-      </motion.div>
+      <>
+        <ChatNotificationBanner
+          notifications={notifications}
+          onDismiss={dismissNotification}
+          onClick={() => { setIsOpen(true); setNotifications([]); loadConversations(); loadAdminUsers(); loadAdminConversations(); }}
+        />
+        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="fixed bottom-6 right-6 z-[9999]">
+          <button
+            onClick={() => { setIsOpen(true); setNotifications([]); loadConversations(); loadAdminUsers(); loadAdminConversations(); }}
+            className="relative p-4 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-full shadow-[0_8px_30px_rgba(139,92,246,0.5)] hover:scale-110 transition-transform"
+          >
+            <MessageCircle className="h-6 w-6 text-white" />
+            {allUnread > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[20px] h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center px-1 animate-pulse">
+                {allUnread}
+              </span>
+            )}
+          </button>
+        </motion.div>
+      </>
     );
   }
 
