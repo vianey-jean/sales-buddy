@@ -229,18 +229,29 @@ const LiveChatVisitor: React.FC<LiveChatVisitorProps> = ({ visitorNom, adminId, 
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
+  const dismissNotification = (id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
   if (isMinimized) {
     return (
-      <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="fixed bottom-6 right-6 z-[9999]">
-        <button onClick={() => setIsMinimized(false)} className="relative p-4 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-full shadow-[0_8px_30px_rgba(139,92,246,0.5)] hover:scale-110 transition-transform">
-          <MessageCircle className="h-6 w-6 text-white" />
-          {messages.filter(m => m.from === 'admin' && !m.lu).length > 0 && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center animate-pulse">
-              {messages.filter(m => m.from === 'admin' && !m.lu).length}
-            </span>
-          )}
-        </button>
-      </motion.div>
+      <>
+        <ChatNotificationBanner
+          notifications={notifications}
+          onDismiss={dismissNotification}
+          onClick={() => { setIsMinimized(false); setNotifications([]); }}
+        />
+        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="fixed bottom-6 right-6 z-[9999]">
+          <button onClick={() => { setIsMinimized(false); setNotifications([]); }} className="relative p-4 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-full shadow-[0_8px_30px_rgba(139,92,246,0.5)] hover:scale-110 transition-transform">
+            <MessageCircle className="h-6 w-6 text-white" />
+            {messages.filter(m => m.from === 'admin' && !m.lu).length > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center animate-pulse">
+                {messages.filter(m => m.from === 'admin' && !m.lu).length}
+              </span>
+            )}
+          </button>
+        </motion.div>
+      </>
     );
   }
 
