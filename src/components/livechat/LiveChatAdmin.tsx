@@ -109,8 +109,12 @@ const LiveChatAdmin: React.FC = () => {
 
   const addNotification = useCallback((sender: string, message: string, id?: string) => {
     const notifId = id || `notif_${Date.now()}`;
+    setNotifications(prev => {
+      // Prevent duplicate notification for same message
+      if (prev.find(n => n.id === notifId)) return prev;
+      return [...prev, { id: notifId, sender, message: message.length > 60 ? message.substring(0, 60) + '...' : message, timestamp: Date.now() }];
+    });
     playNotificationSound();
-    setNotifications(prev => [...prev, { id: notifId, sender, message: message.length > 60 ? message.substring(0, 60) + '...' : message, timestamp: Date.now() }]);
     setTimeout(() => { setNotifications(prev => prev.filter(n => n.id !== notifId)); }, 5000);
   }, []);
 
@@ -242,10 +246,7 @@ const LiveChatAdmin: React.FC = () => {
           if (selectedConvRef.current === msg.visitorId) {
             setMessages(prev => prev.find(m => m.id === msg.id) ? prev : [...prev, msg]);
           }
-          // Notification if chat closed or not viewing this conversation
-          if (msg.from === 'visitor' && (!isOpenRef.current || selectedConvRef.current !== msg.visitorId)) {
-            addNotification(msg.visitorNom || 'Visiteur', msg.contenu, msg.id);
-          }
+          // No notification here — already handled by 'new_message' event
           loadConversations();
         }
       } catch {}
