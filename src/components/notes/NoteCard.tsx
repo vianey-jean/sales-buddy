@@ -300,9 +300,7 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onEdit, onDelete, onDragStart
                   {note.title || 'Sans titre'}
                 </h3>
               )}
-              <button onClick={() => setShowDetail(false)} className="p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 ml-2 flex-shrink-0">
-                <X className="h-4 w-4 text-gray-500" />
-              </button>
+             
             </div>
 
             {/* Toolbar (edit mode only) */}

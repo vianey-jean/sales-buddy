@@ -5,8 +5,9 @@
 // - Utilise ErrorBoundary pour isoler les erreurs critiques
 // - Améliore les performances en chargeant les pages "à la demande"
 
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import SecurityCheckPage from '@/components/security/SecurityCheckPage';
 
 // Contexts
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -46,6 +47,34 @@ const SharedNotesPage = lazy(() => import('@/pages/SharedNotesPage'));
 const SharedViewPage = lazy(() => import('@/pages/SharedViewPage'));
 
 function App() {
+  const [securityVerified, setSecurityVerified] = useState(() => {
+    try {
+      const data = sessionStorage.getItem('security_verified');
+      if (data) {
+        const parsed = JSON.parse(data);
+        // Vérifier que la session est encore valide (même session navigateur)
+        if (parsed.verified && parsed.timestamp) {
+          const elapsed = Date.now() - parsed.timestamp;
+          // Valide pendant 24h max
+          if (elapsed < 24 * 60 * 60 * 1000) {
+            return true;
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return false;
+  });
+
+  if (!securityVerified) {
+    return (
+      <ThemeProvider>
+        <SecurityCheckPage onVerified={() => setSecurityVerified(true)} />
+      </ThemeProvider>
+    );
+  }
+
   return (
     <ErrorBoundary>
       <ThemeProvider>

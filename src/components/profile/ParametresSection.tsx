@@ -275,7 +275,19 @@ const ParametresSection: React.FC<ParametresSectionProps> = ({ userRole }) => {
       setRestoring(true);
       const result = await settingsApi.restoreData(restoreFile, restoreCode);
       if (result.success) {
-        toast({ title: '✅ Restauration réussie', description: result.message, className: 'bg-green-600 text-white border-green-600' });
+        if (result.status === 'unchanged') {
+          toast({
+            title: '⚠️ Aucune nouvelle donnée',
+            description: result.message,
+            className: 'bg-yellow-500 text-black border-yellow-500'
+          });
+        } else {
+          toast({
+            title: '✅ Restauration réussie',
+            description: result.message,
+            className: 'bg-green-600 text-white border-green-600'
+          });
+        }
         setShowRestoreDialog(false);
         setRestoreCode('');
         setRestoreFile(null);

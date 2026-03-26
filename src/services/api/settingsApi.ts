@@ -47,7 +47,7 @@ const settingsApi = {
     return response.data;
   },
 
-  async restoreData(encryptedData: any, decryptionCode: string): Promise<{ success: boolean; message: string }> {
+  async restoreData(encryptedData: any, decryptionCode: string): Promise<{ success: boolean; message: string; status?: 'updated' | 'unchanged'; updatedFilesCount?: number; unchangedFilesCount?: number; totalAddedEntries?: number }> {
     const response = await api.post('/api/settings/restore', { encryptedData, decryptionCode });
     return response.data;
   },
