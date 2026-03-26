@@ -87,6 +87,20 @@ const LiveChatVisitor: React.FC<LiveChatVisitorProps> = ({ visitorNom, adminId, 
             return [...prev, msg];
           });
           if (msg.from === 'admin') {
+            // Notification if minimized
+            if (isMinimizedRef.current) {
+              playNotificationSound();
+              setNotifications(prev => [...prev, {
+                id: msg.id,
+                sender: 'Admin',
+                message: msg.contenu,
+                timestamp: Date.now()
+              }]);
+              // Auto-dismiss after 5s
+              setTimeout(() => {
+                setNotifications(prev => prev.filter(n => n.id !== msg.id));
+              }, 5000);
+            }
             fetch(`${API_BASE}/api/messagerie/mark-read/${visitorId.current}/${adminId}`, {
               method: 'PUT', headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ reader: 'visitor' })
