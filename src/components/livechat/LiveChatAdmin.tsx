@@ -91,6 +91,7 @@ const LiveChatAdmin: React.FC = () => {
   const [editText, setEditText] = useState('');
   const [contextMenuId, setContextMenuId] = useState<string | null>(null);
   const [adminDeleteConfirm, setAdminDeleteConfirm] = useState<{ msgId: string; type: 'own' | 'other' } | null>(null);
+  const [notifications, setNotifications] = useState<ChatNotifItem[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -99,10 +100,23 @@ const LiveChatAdmin: React.FC = () => {
   const selectedAdminRef = useRef<string | null>(null);
   const messagesRef = useRef<ChatMessage[]>([]);
   const adminTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isOpenRef = useRef(false);
 
+  useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
   useEffect(() => { selectedConvRef.current = selectedConv; }, [selectedConv]);
   useEffect(() => { selectedAdminRef.current = selectedAdmin; }, [selectedAdmin]);
   useEffect(() => { messagesRef.current = messages; }, [messages]);
+
+  const addNotification = useCallback((sender: string, message: string, id?: string) => {
+    const notifId = id || `notif_${Date.now()}`;
+    playNotificationSound();
+    setNotifications(prev => [...prev, { id: notifId, sender, message: message.length > 60 ? message.substring(0, 60) + '...' : message, timestamp: Date.now() }]);
+    setTimeout(() => { setNotifications(prev => prev.filter(n => n.id !== notifId)); }, 5000);
+  }, []);
+
+  const dismissNotification = useCallback((id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  }, []);
 
   const isAdmin = user?.role === 'administrateur' || user?.role === 'administrateur principale';
 
