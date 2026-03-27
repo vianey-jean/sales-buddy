@@ -35,6 +35,7 @@ const IGNORED_DB_FILES = [
 let backupTimer = null;
 let lastAutoBackupDate = null;
 let pendingChanges = false;
+let autoBackupEnabled = true; // false quand les données viennent de l'injection
 
 const BACKUP_DELAY_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -123,6 +124,12 @@ const performAutoBackup = () => {
 
 // Planifier un backup dans 5 minutes
 const scheduleBackup = () => {
+  // Si auto-backup désactivé (données venant d'injection), ne pas planifier
+  if (!autoBackupEnabled) {
+    console.log('⏸️ Auto-backup désactivé (source: injection). Pas de planification.');
+    return;
+  }
+
   if (backupTimer) {
     clearTimeout(backupTimer);
   }
@@ -131,11 +138,28 @@ const scheduleBackup = () => {
   console.log('⏱️ Auto-backup planifié dans 5 minutes...');
 
   backupTimer = setTimeout(() => {
-    if (pendingChanges) {
+    if (pendingChanges && autoBackupEnabled) {
       performAutoBackup();
     }
     backupTimer = null;
   }, BACKUP_DELAY_MS);
+};
+
+// Désactiver temporairement l'auto-backup (appelé lors d'une injection)
+const disableAutoBackup = () => {
+  autoBackupEnabled = false;
+  if (backupTimer) {
+    clearTimeout(backupTimer);
+    backupTimer = null;
+  }
+  pendingChanges = false;
+  console.log('🚫 Auto-backup désactivé (injection en cours)');
+};
+
+// Réactiver l'auto-backup
+const enableAutoBackup = () => {
+  autoBackupEnabled = true;
+  console.log('✅ Auto-backup réactivé');
 };
 
 /**
@@ -174,4 +198,4 @@ const autoBackupMiddleware = (req, res, next) => {
 // Initialisation
 console.log('📦 Auto-backup service initialisé (délai: 5 minutes après modification métier)');
 
-module.exports = { autoBackupMiddleware, performAutoBackup, scheduleBackup };
+module.exports = { autoBackupMiddleware, performAutoBackup, scheduleBackup, disableAutoBackup, enableAutoBackup };

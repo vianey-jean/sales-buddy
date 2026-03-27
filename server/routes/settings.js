@@ -294,7 +294,10 @@ router.post('/backup', authMiddleware, (req, res) => {
 // POST /api/settings/restore - Injecter des données
 // ==================
 router.post('/restore', authMiddleware, (req, res) => {
+  const { disableAutoBackup, enableAutoBackup } = require('../middleware/autoBackup');
   try {
+    // Désactiver l'auto-backup pendant l'injection
+    disableAutoBackup();
     if (!isAdmin(req.user)) {
       return res.status(403).json({ message: 'Accès refusé. Administrateur requis.' });
     }
@@ -340,12 +343,17 @@ router.post('/restore', authMiddleware, (req, res) => {
       }
     });
 
+    // Réactiver l'auto-backup après 10 secondes (laisser le temps aux écritures de se terminer)
+    setTimeout(() => enableAutoBackup(), 10000);
+
     res.json({
       success: true,
       message: `${restoredCount} fichiers restaurés avec succès`,
       metadata: backupData._metadata
     });
   } catch (error) {
+    // Réactiver même en cas d'erreur
+    enableAutoBackup();
     console.error('Error restoring backup:', error);
     res.status(500).json({ message: 'Erreur lors de la restauration' });
   }
