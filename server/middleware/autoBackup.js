@@ -17,7 +17,11 @@ const IGNORED_ROUTE_PREFIXES = [
   '/api/profile',
   '/api/settings',
   '/api/parametres',
-  '/api/module-settings'
+  '/api/module-settings',
+  '/api/indisponible',
+  '/api/auth',
+  '/api/messagerie',
+  '/api/sync'
 ];
 
 // Fichiers DB à ignorer pour le déclenchement
