@@ -35,6 +35,7 @@ const IGNORED_DB_FILES = [
 let backupTimer = null;
 let lastAutoBackupDate = null;
 let pendingChanges = false;
+let autoBackupEnabled = true; // false quand les données viennent de l'injection
 
 const BACKUP_DELAY_MS = 5 * 60 * 1000; // 5 minutes
 
