@@ -255,6 +255,10 @@ if (!fs.existsSync(remboursementPath)) {
   fs.writeFileSync(remboursementPath, JSON.stringify([], null, 2));
 }
 
+// Auto-backup middleware
+const { autoBackupMiddleware } = require('./middleware/autoBackup');
+app.use(autoBackupMiddleware);
+
 // Import routes
 const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/products');
