@@ -60,6 +60,11 @@ const settingsApi = {
   async verifyPassword(password: string): Promise<{ valid: boolean }> {
     const response = await api.post('/api/settings/verify-password', { password });
     return response.data;
+  },
+
+  async autoBackup(encryptionPassword: string): Promise<{ success: boolean; backup: any; filename: string }> {
+    const response = await api.post('/api/settings/auto-backup', { encryptionPassword });
+    return response.data;
   }
 };
 

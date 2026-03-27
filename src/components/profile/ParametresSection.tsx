@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   Settings, Trash2, Upload, Download, Shield, Eye, EyeOff, AlertTriangle,
@@ -80,12 +80,187 @@ const ParametresSection: React.FC<ParametresSectionProps> = ({ userRole }) => {
   const [specChangeTarget, setSpecChangeTarget] = useState('');
   const [changingSpec, setChangingSpec] = useState(false);
 
+  // Auto-backup state
+  const autoBackupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastServerChangeAtRef = useRef<string | null>(null);
+  const countdownActivationIdRef = useRef<string | null>(null);
+  const blockedActivationIdRef = useRef<string | null>(null);
+  const autoBackupInProgressRef = useRef(false);
+  const manualBackupDoneRef = useRef(false);
+  const [autoBackupPending, setAutoBackupPending] = useState(false);
+  const [countdownSeconds, setCountdownSeconds] = useState(0);
+
   useEffect(() => {
     fetchSettings();
     if (isAdminPrincipal) {
       fetchUsers();
     }
   }, [isAdminPrincipal]);
+
+  const clearAutoBackupCountdown = useCallback(() => {
+    if (autoBackupTimerRef.current) {
+      clearTimeout(autoBackupTimerRef.current);
+      autoBackupTimerRef.current = null;
+    }
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
+    countdownActivationIdRef.current = null;
+    setAutoBackupPending(false);
+    setCountdownSeconds(0);
+  }, []);
+
+  const triggerAutoBackup = useCallback(async () => {
+    if (manualBackupDoneRef.current || autoBackupInProgressRef.current) {
+      setAutoBackupPending(false);
+      return;
+    }
+
+    autoBackupInProgressRef.current = true;
+
+    try {
+      const currentActivationId = countdownActivationIdRef.current;
+
+      // Get the stored password from sessionStorage
+      const encodedPw = sessionStorage.getItem('_abk');
+      if (!encodedPw) {
+        console.warn('Auto-backup: no password available');
+        blockedActivationIdRef.current = currentActivationId;
+        clearAutoBackupCountdown();
+        return;
+      }
+
+      const password = atob(encodedPw);
+      const result = await settingsApi.autoBackup(password);
+
+      if (result.success) {
+        // Download the backup file automatically
+        const blob = new Blob([JSON.stringify(result.backup)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = result.filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        toast({
+          title: '🔄 Sauvegarde automatique effectuée',
+          description: 'Le fichier de sauvegarde a été téléchargé automatiquement (crypté avec votre mot de passe)',
+          className: 'bg-blue-600 text-white border-blue-600'
+        });
+
+        clearAutoBackupCountdown();
+        manualBackupDoneRef.current = true; // Prevent further auto-backups until new data
+      }
+    } catch (e) {
+      console.error('Auto-backup failed:', e);
+      blockedActivationIdRef.current = countdownActivationIdRef.current;
+      toast({
+        title: 'Sauvegarde automatique échouée',
+        description: 'La sauvegarde automatique n\'a pas pu être effectuée',
+        variant: 'destructive'
+      });
+      clearAutoBackupCountdown();
+    } finally {
+      autoBackupInProgressRef.current = false;
+    }
+  }, [clearAutoBackupCountdown, toast]);
+
+  const startAutoBackupCountdown = useCallback((serverState: any) => {
+    if (!serverState?.activationId || manualBackupDoneRef.current) {
+      return;
+    }
+
+    const countdownStartedAt = serverState.countdownStartedAt
+      ? new Date(serverState.countdownStartedAt).getTime()
+      : Date.now();
+    const countdownDurationMs = Number(serverState.countdownDurationMs) > 0
+      ? Number(serverState.countdownDurationMs)
+      : 5 * 60 * 1000;
+
+    const getRemainingSeconds = () => Math.max(
+      0,
+      Math.ceil((countdownDurationMs - (Date.now() - countdownStartedAt)) / 1000)
+    );
+
+    clearAutoBackupCountdown();
+    countdownActivationIdRef.current = serverState.activationId;
+
+    const initialSeconds = getRemainingSeconds();
+    if (initialSeconds <= 0) {
+      triggerAutoBackup();
+      return;
+    }
+
+    setAutoBackupPending(true);
+    setCountdownSeconds(initialSeconds);
+
+    countdownIntervalRef.current = setInterval(() => {
+      const remainingSeconds = getRemainingSeconds();
+      setCountdownSeconds(remainingSeconds);
+
+      if (remainingSeconds <= 0) {
+        if (countdownIntervalRef.current) {
+          clearInterval(countdownIntervalRef.current);
+          countdownIntervalRef.current = null;
+        }
+        triggerAutoBackup();
+      }
+    }, 1000);
+  }, [clearAutoBackupCountdown, triggerAutoBackup]);
+
+  // ========== AUTO-BACKUP: piloté par l'état stable du serveur ==========
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    let isMounted = true;
+
+    const syncAutoBackupState = async () => {
+      try {
+        const response = await api.get('/api/sync/status');
+        if (!isMounted) return;
+
+        const serverState = response.data?.autoBackupState;
+        if (!serverState) return;
+
+        if (serverState.lastChangeAt && serverState.lastChangeAt !== lastServerChangeAtRef.current) {
+          lastServerChangeAtRef.current = serverState.lastChangeAt;
+          manualBackupDoneRef.current = false;
+          blockedActivationIdRef.current = null;
+        }
+
+        if (serverState.signal && serverState.activationId) {
+          if (blockedActivationIdRef.current === serverState.activationId) {
+            return;
+          }
+
+          if (countdownActivationIdRef.current !== serverState.activationId) {
+            startAutoBackupCountdown(serverState);
+          }
+          return;
+        }
+
+        if (countdownActivationIdRef.current) {
+          clearAutoBackupCountdown();
+        }
+      } catch {
+        // Silent
+      }
+    };
+
+    const pollInterval = setInterval(syncAutoBackupState, 5000);
+    syncAutoBackupState();
+
+    return () => {
+      isMounted = false;
+      clearInterval(pollInterval);
+      clearAutoBackupCountdown();
+    };
+  }, [clearAutoBackupCountdown, isAdmin, startAutoBackupCountdown]);
 
   const defaultSettings: AppSettings = {
     siteName: 'Riziky', language: 'fr', timezone: 'Indian/Reunion', currency: 'EUR', dateFormat: 'DD/MM/YYYY',
@@ -223,12 +398,16 @@ const ParametresSection: React.FC<ParametresSectionProps> = ({ userRole }) => {
     }
   };
 
-  // ========== BACKUP ==========
+  // ========== BACKUP (manual - cancels auto-backup) ==========
   const handleBackup = async () => {
     try {
       setBackingUp(true);
       const result = await settingsApi.backupData(backupCode);
       if (result.success) {
+        // Cancel auto-backup since manual backup was done
+        manualBackupDoneRef.current = true;
+        clearAutoBackupCountdown();
+
         const blob = new Blob([JSON.stringify(result.backup)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -386,6 +565,11 @@ const ParametresSection: React.FC<ParametresSectionProps> = ({ userRole }) => {
               <div className="flex items-center gap-2 mb-4">
                 <Shield className="w-4 h-4 text-amber-500" />
                 <span className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Zone Administrateur</span>
+                {autoBackupPending && countdownSeconds > 0 && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 animate-pulse font-mono">
+                    Sauvegarde auto dans {Math.floor(countdownSeconds / 60)} min {String(countdownSeconds % 60).padStart(2, '0')} s
+                  </span>
+                )}
               </div>
 
               <div className={`grid grid-cols-1 ${isAdminPrincipal ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-3`}>
