@@ -198,4 +198,4 @@ const autoBackupMiddleware = (req, res, next) => {
 // Initialisation
 console.log('📦 Auto-backup service initialisé (délai: 5 minutes après modification métier)');
 
-module.exports = { autoBackupMiddleware, performAutoBackup, scheduleBackup };
+module.exports = { autoBackupMiddleware, performAutoBackup, scheduleBackup, disableAutoBackup, enableAutoBackup };
