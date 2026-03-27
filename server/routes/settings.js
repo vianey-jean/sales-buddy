@@ -294,7 +294,10 @@ router.post('/backup', authMiddleware, (req, res) => {
 // POST /api/settings/restore - Injecter des données
 // ==================
 router.post('/restore', authMiddleware, (req, res) => {
+  const { disableAutoBackup, enableAutoBackup } = require('../middleware/autoBackup');
   try {
+    // Désactiver l'auto-backup pendant l'injection
+    disableAutoBackup();
     if (!isAdmin(req.user)) {
       return res.status(403).json({ message: 'Accès refusé. Administrateur requis.' });
     }
