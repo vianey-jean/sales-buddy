@@ -343,12 +343,17 @@ router.post('/restore', authMiddleware, (req, res) => {
       }
     });
 
+    // Réactiver l'auto-backup après 10 secondes (laisser le temps aux écritures de se terminer)
+    setTimeout(() => enableAutoBackup(), 10000);
+
     res.json({
       success: true,
       message: `${restoredCount} fichiers restaurés avec succès`,
       metadata: backupData._metadata
     });
   } catch (error) {
+    // Réactiver même en cas d'erreur
+    enableAutoBackup();
     console.error('Error restoring backup:', error);
     res.status(500).json({ message: 'Erreur lors de la restauration' });
   }
