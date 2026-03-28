@@ -1,9 +1,61 @@
+/**
+ * =============================================================================
+ * ParametresSection — Section de paramètres administrateur
+ * =============================================================================
+ * 
+ * Section complète de gestion administrative, visible uniquement par les administrateurs.
+ * 
+ * Fonctionnalités :
+ * 
+ * 1. INDISPONIBILITÉS / CONGÉS (IndisponibiliteSection)
+ *    - Gestion des jours d'absence avec date, plage horaire, motif
+ * 
+ * 2. PARAMÈTRES DES MODULES (ModuleSettingsSection)
+ *    - Configuration pointage : prix/heure, prix journalier, arrondi
+ *    - Configuration tâches : auto-complétion, affichage terminées
+ * 
+ * 3. ZONE ADMINISTRATEUR (admin + admin principale)
+ *    - Sauvegarde manuelle : chiffrement AES-256 + téléchargement JSON
+ *    - Injection de données : restauration depuis fichier chiffré
+ *    - Sauvegarde automatique : compte à rebours de 5 min après modification
+ *      - Contrôle arrêt/relance persisté dans auto-sauvegarde.json
+ *      - Icône rouge StopCircle pour arrêter, verte PlayCircle pour relancer
+ *      - Badge "Auto-backup arrêté" quand désactivé
+ *    - Suppression totale : réinitialisation complète (admin principale uniquement)
+ * 
+ * 4. GESTION DES RÔLES (admin principale uniquement)
+ *    - Promouvoir un utilisateur en administrateur
+ *    - Rétrograder un administrateur en simple utilisateur
+ * 
+ * 5. GESTION SPÉCIFICATION (admin principale uniquement)
+ *    - Ajouter/retirer la spécification "live" à un administrateur
+ *    - Un admin avec spécification "live" peut recevoir les messages du chat en direct
+ *    - Enregistré dans users.json : "specification": "live"
+ * 
+ * API utilisées :
+ * - settingsApi : getSettings, updateSettings, backupData, restoreData, deleteAllData, autoBackup
+ * - api.get/put('/api/settings/auto-sauvegarde') : état du toggle auto-backup
+ * - api.get('/api/settings/users') : liste des utilisateurs
+ * - api.put('/api/settings/user-role') : changement de rôle
+ * - api.put('/api/settings/user-specification') : changement de spécification
+ * - api.get('/api/sync/status') : état du système auto-backup (polling 5s)
+ * 
+ * Base de données :
+ * - server/db/settings.json : paramètres globaux
+ * - server/db/auto-sauvegarde.json : état auto-sauvegarde (true/false)
+ * - server/db/users.json : comptes utilisateurs (rôles, spécifications)
+ * - server/db/moduleSettings.json : paramètres par module
+ * - server/db/indisponible.json : congés et indisponibilités
+ * =============================================================================
+ */
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   Settings, Trash2, Upload, Download, Shield, Eye, EyeOff, AlertTriangle,
  ChevronDown, ChevronUp,
-  UserCog, ArrowUpCircle, ArrowDownCircle, CalendarOff, Radio
+  UserCog, ArrowUpCircle, ArrowDownCircle, CalendarOff, Radio,
+  StopCircle, PlayCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -90,6 +142,24 @@ const ParametresSection: React.FC<ParametresSectionProps> = ({ userRole }) => {
   const manualBackupDoneRef = useRef(false);
   const [autoBackupPending, setAutoBackupPending] = useState(false);
   const [countdownSeconds, setCountdownSeconds] = useState(0);
+  const [autoBackupPaused, setAutoBackupPaused] = useState(false);
+
+  // Load auto-sauvegarde status from server on mount
+  useEffect(() => {
+    const loadAutoSauvegardeStatus = async () => {
+      try {
+        const response = await api.get('/api/settings/auto-sauvegarde');
+        if (response.data && typeof response.data.autoSauvegarde === 'boolean') {
+          setAutoBackupPaused(!response.data.autoSauvegarde);
+        }
+      } catch (e) {
+        console.error('Error loading auto-sauvegarde status:', e);
+      }
+    };
+    if (isAdmin) {
+      loadAutoSauvegardeStatus();
+    }
+  }, [isAdmin]);
 
   useEffect(() => {
     fetchSettings();
@@ -113,7 +183,7 @@ const ParametresSection: React.FC<ParametresSectionProps> = ({ userRole }) => {
   }, []);
 
   const triggerAutoBackup = useCallback(async () => {
-    if (manualBackupDoneRef.current || autoBackupInProgressRef.current) {
+    if (manualBackupDoneRef.current || autoBackupInProgressRef.current || autoBackupPaused) {
       setAutoBackupPending(false);
       return;
     }
@@ -168,10 +238,10 @@ const ParametresSection: React.FC<ParametresSectionProps> = ({ userRole }) => {
     } finally {
       autoBackupInProgressRef.current = false;
     }
-  }, [clearAutoBackupCountdown, toast]);
+  }, [clearAutoBackupCountdown, toast, autoBackupPaused]);
 
   const startAutoBackupCountdown = useCallback((serverState: any) => {
-    if (!serverState?.activationId || manualBackupDoneRef.current) {
+    if (!serverState?.activationId || manualBackupDoneRef.current || autoBackupPaused) {
       return;
     }
 
@@ -211,7 +281,7 @@ const ParametresSection: React.FC<ParametresSectionProps> = ({ userRole }) => {
         triggerAutoBackup();
       }
     }, 1000);
-  }, [clearAutoBackupCountdown, triggerAutoBackup]);
+  }, [clearAutoBackupCountdown, triggerAutoBackup, autoBackupPaused]);
 
   // ========== AUTO-BACKUP: piloté par l'état stable du serveur ==========
   useEffect(() => {
@@ -221,6 +291,17 @@ const ParametresSection: React.FC<ParametresSectionProps> = ({ userRole }) => {
 
     const syncAutoBackupState = async () => {
       try {
+        // Check server-side auto-sauvegarde flag
+        try {
+          const autoSavResponse = await api.get('/api/settings/auto-sauvegarde');
+          if (!isMounted) return;
+          if (autoSavResponse.data && autoSavResponse.data.autoSauvegarde === false) {
+            setAutoBackupPaused(true);
+            clearAutoBackupCountdown();
+            return;
+          }
+        } catch { /* silent */ }
+
         const response = await api.get('/api/sync/status');
         if (!isMounted) return;
 
@@ -565,9 +646,46 @@ const ParametresSection: React.FC<ParametresSectionProps> = ({ userRole }) => {
               <div className="flex items-center gap-2 mb-4">
                 <Shield className="w-4 h-4 text-amber-500" />
                 <span className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Zone Administrateur</span>
-                {autoBackupPending && countdownSeconds > 0 && (
+                {!autoBackupPaused ? (
+                  <button
+                    onClick={async () => {
+                      setAutoBackupPaused(true);
+                      clearAutoBackupCountdown();
+                      try {
+                        await api.put('/api/settings/auto-sauvegarde', { autoSauvegarde: false });
+                      } catch (e) { console.error('Error saving auto-sauvegarde:', e); }
+                      toast({ title: '⏹ Sauvegarde auto arrêtée', description: 'La sauvegarde automatique est désactivée', className: 'bg-red-600 text-white border-red-600' });
+                    }}
+                    title="Arrêter la sauvegarde automatique"
+                    className="p-0.5 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                  >
+                    <StopCircle className="w-4 h-4 text-red-500" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={async () => {
+                      setAutoBackupPaused(false);
+                      manualBackupDoneRef.current = false;
+                      lastServerChangeAtRef.current = null;
+                      try {
+                        await api.put('/api/settings/auto-sauvegarde', { autoSauvegarde: true });
+                      } catch (e) { console.error('Error saving auto-sauvegarde:', e); }
+                      toast({ title: '▶ Sauvegarde auto relancée', description: 'La sauvegarde automatique est réactivée', className: 'bg-green-600 text-white border-green-600' });
+                    }}
+                    title="Relancer la sauvegarde automatique"
+                    className="p-0.5 rounded-full hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
+                  >
+                    <PlayCircle className="w-4 h-4 text-green-500" />
+                  </button>
+                )}
+                {autoBackupPending && countdownSeconds > 0 && !autoBackupPaused && (
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 animate-pulse font-mono">
                     Sauvegarde auto dans {Math.floor(countdownSeconds / 60)} min {String(countdownSeconds % 60).padStart(2, '0')} s
+                  </span>
+                )}
+                {autoBackupPaused && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-mono">
+                    Auto-sauvegarde arrêté
                   </span>
                 )}
               </div>

@@ -1,3 +1,28 @@
+/**
+ * =============================================================================
+ * ModuleSettingsSection — Configuration des modules métier
+ * =============================================================================
+ * 
+ * Permet de configurer les paramètres par module :
+ * - Pointage : prix/heure et prix journalier par défaut, arrondi des heures
+ * - Tâches : auto-complétion, affichage des tâches terminées
+ * 
+ * Les paramètres sont synchronisés avec les fichiers JSON du serveur :
+ * - moduleSettings.json (paramètres globaux des modules)
+ * - prixpointage.json (synchronisation des prix du pointage)
+ * - parametretache.json (synchronisation des paramètres de tâches)
+ * 
+ * Chaque section est un accordéon dépliable avec un en-tête coloré.
+ * Les toggles utilisent un design personnalisé gradient émeraude/teal.
+ * 
+ * API utilisées :
+ * - moduleSettingsApi.getAll() → récupère les paramètres
+ * - moduleSettingsApi.updateModule() → met à jour un module
+ * - parametresApi.updatePrixPointage() → synchronise les prix du pointage
+ * - parametresApi.updateParametreTache() → synchronise les paramètres de tâches
+ * =============================================================================
+ */
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {

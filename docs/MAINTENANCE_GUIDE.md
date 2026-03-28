@@ -494,12 +494,16 @@ Enregistre les heures de travail des travailleurs dans différentes entreprises.
 | Fichier | Rôle |
 |---------|------|
 | `src/components/livechat/LiveChatVisitor.tsx` | Widget visiteur |
-| `src/components/livechat/LiveChatAdmin.tsx` | Widget admin |
+| `src/components/livechat/LiveChatAdmin.tsx` | Widget admin (visiteurs + admins) |
 | `server/routes/messagerie.js` | Routes API backend |
-| `server/db/messagerie.json` | Base de données messages |
+| `server/db/messagerie.json` | Base de données messages visiteurs |
+| `server/db/admin-messages.json` | Base de données messages admin-to-admin |
 
 ### Fonctionnalités
 - Emoji, Like ❤️, Modifier/Supprimer ses messages, temps réel SSE
+- Onglets Visiteurs / Admins dans LiveChatAdmin
+- Indicateur de statut en ligne (point vert/rouge) pour les admins
+- Messagerie admin-to-admin avec historique et notifications
 
 ### Problèmes courants
 - **Messages non instantanés** : Vérifier SSE + polling 2s dans les composants
@@ -516,3 +520,40 @@ Enregistre les heures de travail des travailleurs dans différentes entreprises.
 | `server/models/Fournisseur.js` | Modèle CRUD |
 | `server/db/fournisseurs.json` | Base de données |
 | `src/services/api/fournisseurApi.ts` | Service frontend |
+
+---
+
+## 📌 23. Profil & Paramètres
+
+### Ce que ça fait
+Page de gestion du profil utilisateur et des paramètres administrateur.
+
+### Fichiers concernés
+
+| Côté | Fichier | Rôle |
+|------|---------|------|
+| Frontend Page | `src/pages/ProfilePage.tsx` | Page principale (onglets Profil/Paramètres) |
+| Composant | `src/components/profile/ProfileCard.tsx` | Carte d'identité (avatar, nom, rôle) |
+| Composant | `src/components/profile/ProfileAvatar.tsx` | Avatar animé avec anneaux pulsants |
+| Composant | `src/components/profile/ProfileInfoCard.tsx` | Informations personnelles éditables |
+| Composant | `src/components/profile/PasswordSection.tsx` | Changement de mot de passe |
+| Composant | `src/components/profile/ParametresSection.tsx` | Paramètres admin (backup, rôles, spécifications) |
+| Composant | `src/components/profile/IndisponibiliteSection.tsx` | Gestion des congés |
+| Composant | `src/components/profile/ModuleSettingsSection.tsx` | Configuration par module |
+| Frontend API | `src/services/api/profileApi.ts` | Requêtes profil |
+| Frontend API | `src/services/api/settingsApi.ts` | Requêtes paramètres |
+| Backend Route | `server/routes/profile.js` | Routes profil (GET, PUT, POST photo) |
+| Backend Route | `server/routes/settings.js` | Routes paramètres (backup, rôles, spécifications, auto-sauvegarde) |
+| Base de données | `server/db/users.json` | Comptes utilisateurs |
+| Base de données | `server/db/settings.json` | Paramètres globaux |
+| Base de données | `server/db/auto-sauvegarde.json` | État auto-sauvegarde |
+| Base de données | `server/db/moduleSettings.json` | Paramètres par module |
+| Base de données | `server/db/indisponible.json` | Congés |
+
+### Pour modifier
+- **Changer les informations éditables** → `ProfileInfoCard.tsx`
+- **Modifier la validation mot de passe** → `PasswordSection.tsx` + `server/routes/profile.js`
+- **Ajouter un paramètre module** → `ModuleSettingsSection.tsx` + `server/db/moduleSettings.json`
+- **Modifier le contrôle auto-backup** → `ParametresSection.tsx` (boutons StopCircle/PlayCircle)
+- **Modifier la gestion des rôles** → `ParametresSection.tsx` (section "Gestion des rôles")
+- **Modifier la gestion des spécifications** → `ParametresSection.tsx` (section "Gestion spécification")

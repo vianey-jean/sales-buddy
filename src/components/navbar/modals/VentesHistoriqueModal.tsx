@@ -28,6 +28,7 @@ const VentesHistoriqueModal: React.FC<VentesHistoriqueModalProps> = ({
   historique,
   annee
 }) => {
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
@@ -37,7 +38,22 @@ const VentesHistoriqueModal: React.FC<VentesHistoriqueModalProps> = ({
     }).format(value);
   };
 
-  const totalAnnuel = historique.reduce((sum, h) => sum + h.totalVentesMois, 0);
+  // ✅ SUPPRESSION DES DOUBLONS (mois + année)
+  const historiqueUnique = Object.values(
+    historique.reduce((acc, item) => {
+      const key = `${item.mois}-${item.annee}`;
+      acc[key] = item; // garde la dernière occurrence
+      return acc;
+    }, {} as Record<string, MonthlyData>)
+  );
+
+  // (optionnel) trier par mois
+  historiqueUnique.sort((a, b) => a.mois - b.mois);
+
+  const totalAnnuel = historiqueUnique.reduce(
+    (sum, h) => sum + h.totalVentesMois,
+    0
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -55,7 +71,8 @@ const VentesHistoriqueModal: React.FC<VentesHistoriqueModalProps> = ({
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
-          {/* Total Card */}
+
+          {/* Total */}
           <div className="p-4 rounded-2xl bg-gradient-to-r from-rose-500/20 to-pink-500/20 border border-rose-300/50 dark:border-rose-700/50 backdrop-blur-sm">
             <div className="flex items-center gap-3">
               <div className="p-3 rounded-xl bg-gradient-to-br from-rose-500 to-pink-500 shadow-lg">
@@ -70,10 +87,10 @@ const VentesHistoriqueModal: React.FC<VentesHistoriqueModalProps> = ({
             </div>
           </div>
 
-          {/* Monthly List */}
+          {/* Liste */}
           <div className="max-h-[300px] overflow-y-auto space-y-2 pr-1">
-            {historique.length > 0 ? (
-              historique.map((item, index) => (
+            {historiqueUnique.length > 0 ? (
+              historiqueUnique.map((item, index) => (
                 <div
                   key={`${item.mois}-${item.annee}`}
                   className={cn(
@@ -83,10 +100,12 @@ const VentesHistoriqueModal: React.FC<VentesHistoriqueModalProps> = ({
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
                   <div className="flex items-center justify-between">
+                    
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm">
                         {MOIS_NOMS[item.mois - 1].substring(0, 3)}
                       </div>
+
                       <div>
                         <p className="font-semibold text-slate-700 dark:text-slate-200">
                           {MOIS_NOMS[item.mois - 1]}
@@ -96,10 +115,12 @@ const VentesHistoriqueModal: React.FC<VentesHistoriqueModalProps> = ({
                         </p>
                       </div>
                     </div>
+
                     <div className="text-right">
                       <p className="text-lg font-bold text-rose-600 dark:text-rose-400">
                         {formatCurrency(item.totalVentesMois)}
                       </p>
+
                       <div className={cn(
                         "text-xs px-2 py-0.5 rounded-full",
                         item.pourcentage >= 100 
@@ -109,6 +130,7 @@ const VentesHistoriqueModal: React.FC<VentesHistoriqueModalProps> = ({
                         {item.pourcentage >= 100 ? '✓ Atteint' : 'En cours'}
                       </div>
                     </div>
+
                   </div>
                 </div>
               ))

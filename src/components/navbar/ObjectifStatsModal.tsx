@@ -88,10 +88,10 @@ const ObjectifStatsModal: React.FC = () => {
   };
 
   const chartData = data?.historique?.map((item) => ({
-    name: MOIS_NOMS[item.mois - 1],
-    ventes: item.totalVentesMois,
-    objectif: item.objectif,
-    pourcentage: item.pourcentage,
+   name: MOIS_NOMS[item.mois - 1],
+  ventes: item.totalVentesMois,
+  objectif: item.objectif,
+  pourcentage: item.pourcentage,
   })) || [];
 
   // Fill missing months with 0
@@ -105,11 +105,24 @@ const ObjectifStatsModal: React.FC = () => {
     };
   });
 
+  // ✅ SUPPRESSION DES DOUBLONS (mois + année)
+const historiqueUnique = data?.historique
+  ? Object.values(
+      data.historique.reduce((acc, item) => {
+        const key = `${item.mois}-${item.annee}`;
+        acc[key] = item; // garde la dernière occurrence
+        return acc;
+      }, {} as Record<string, MonthlyData>)
+    ).sort((a, b) => a.mois - b.mois)
+  : [];
+
   const currentPercentage = data?.currentData 
     ? Math.round((data.currentData.totalVentesMois / data.currentData.objectif) * 100)
     : 0;
-
-  const totalAnnuel = data?.historique?.reduce((sum, item) => sum + item.totalVentesMois, 0) || 0;
+const totalAnnuel = historiqueUnique.reduce(
+  (sum, item) => sum + item.totalVentesMois,
+  0
+);
   const moyenneMensuelle = data?.historique?.length 
     ? Math.round(totalAnnuel / data.historique.length)
     : 0;

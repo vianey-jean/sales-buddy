@@ -1,3 +1,25 @@
+/**
+ * =============================================================================
+ * ProfileCard — Carte d'identité du profil utilisateur
+ * =============================================================================
+ * 
+ * Affiche la carte d'identité visuelle de l'utilisateur :
+ * - Avatar animé (via ProfileAvatar) avec anneaux pulsants
+ * - Nom complet avec gradient violet/fuchsia
+ * - Adresse email
+ * - Badge du rôle (administrateur principale, administrateur, etc.)
+ * - Indicateur de statut "En ligne" avec point vert pulsant
+ * - Ligne gradient décorative en haut de la carte
+ * 
+ * Props :
+ * - photoUrl : URL de la photo de profil
+ * - firstName, lastName : nom complet
+ * - email : adresse email
+ * - userRole : rôle affiché dans le badge
+ * - onClickUpload : callback pour ouvrir le sélecteur de photo
+ * =============================================================================
+ */
+
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Shield, Crown, Sparkles } from 'lucide-react';
@@ -19,19 +41,29 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
       className="relative rounded-3xl backdrop-blur-2xl bg-white/70 dark:bg-white/5 border border-violet-200/30 dark:border-violet-800/20 shadow-2xl shadow-violet-500/5 overflow-hidden p-8"
     >
+      {/* Ligne gradient décorative en haut */}
       <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500" />
+
       <div className="flex flex-col items-center gap-6">
+        {/* Avatar animé avec anneaux pulsants */}
         <ProfileAvatar photoUrl={photoUrl} onClickUpload={onClickUpload} />
+
         <div className="text-center">
+          {/* Nom complet avec gradient */}
           <h2 className="text-2xl font-black bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
             {firstName} {lastName}
           </h2>
+          {/* Email */}
           <p className="text-sm text-muted-foreground mt-1">{email}</p>
+
+          {/* Badge du rôle */}
           {userRole && (
             <span className="inline-flex items-center gap-1 mt-2 px-3 py-1 rounded-full bg-violet-500/10 text-violet-600 text-xs font-bold border border-violet-500/20">
               <Shield className="w-3 h-3" /> {userRole}
             </span>
           )}
+
+          {/* Indicateur "En ligne" avec point vert pulsant */}
           <div className="mt-2">
             <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 text-xs font-bold border border-emerald-500/20">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> En ligne

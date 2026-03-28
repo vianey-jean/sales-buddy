@@ -405,9 +405,15 @@ Gère le chat en direct entre visiteurs et administrateurs.
 | PUT | `/` | Modifier les paramètres (admin) |
 | GET | `/users` | Liste des utilisateurs (admin principale) |
 | PUT | `/user-role` | Changer le rôle d'un utilisateur (admin principale) |
+| PUT | `/user-specification` | Changer la spécification d'un admin (admin principale) |
 | POST | `/backup` | Sauvegarder toutes les données (scan dynamique de `server/db/*.json`) |
+| POST | `/auto-backup` | Sauvegarde automatique avec mot de passe utilisateur |
 | POST | `/restore` | Restaurer des données depuis un fichier chiffré |
 | POST | `/delete-all` | Supprimer toutes les données (admin principale) |
 | POST | `/verify-password` | Vérifier le mot de passe admin |
+| GET | `/auto-sauvegarde` | Statut de la sauvegarde automatique |
+| PUT | `/auto-sauvegarde` | Activer/désactiver la sauvegarde automatique |
 
 **Note** : La sauvegarde et suppression utilisent `fs.readdirSync()` pour scanner dynamiquement tous les fichiers `.json` dans `server/db/`. Tout nouveau fichier de base de données est automatiquement inclus.
+
+**Base de données** : `server/db/auto-sauvegarde.json` — `{ "autoSauvegarde": true/false }` pour persister l'état du toggle auto-backup entre les sessions.

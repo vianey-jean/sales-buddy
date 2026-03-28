@@ -1,3 +1,26 @@
+/**
+ * =============================================================================
+ * IndisponibiliteSection — Gestion des congés et indisponibilités
+ * =============================================================================
+ * 
+ * Permet de gérer les jours d'indisponibilité / congés :
+ * - Ajouter un jour indisponible (date, plage horaire ou journée complète, motif)
+ * - Modifier une indisponibilité existante
+ * - Supprimer une indisponibilité avec confirmation
+ * 
+ * Les indisponibilités sont triées par date décroissante.
+ * Un toggle "Journée complète" masque/affiche les champs heure début/fin.
+ * 
+ * API utilisées :
+ * - indisponibleApi.getAll() → liste des indisponibilités
+ * - indisponibleApi.create() → créer une indisponibilité
+ * - indisponibleApi.update() → modifier une indisponibilité
+ * - indisponibleApi.delete() → supprimer une indisponibilité
+ * 
+ * Base de données : server/db/indisponible.json
+ * =============================================================================
+ */
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {

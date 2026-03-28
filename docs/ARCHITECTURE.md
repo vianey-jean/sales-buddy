@@ -319,7 +319,14 @@ ProfilePage.tsx
 - **Rôles** : 3 niveaux — simple utilisateur, administrateur, administrateur principale
 
 ### Base de données associées
-- `server/db/users.json` — Comptes utilisateurs
+- `server/db/users.json` — Comptes utilisateurs (rôles, spécifications)
 - `server/db/settings.json` — Paramètres globaux
 - `server/db/moduleSettings.json` — Paramètres par module
 - `server/db/indisponible.json` — Congés et indisponibilités
+- `server/db/auto-sauvegarde.json` — État de la sauvegarde automatique (true/false)
+- `server/db/admin-messages.json` — Messages entre administrateurs
+
+### Fonctionnalités avancées
+- **Sauvegarde automatique** : compte à rebours de 5 min après modification, avec contrôle arrêt/relance persisté dans `auto-sauvegarde.json`
+- **Gestion spécification** : l'admin principale peut attribuer la spécification "live" à un administrateur pour le routage du chat en direct
+- **Messagerie admin-to-admin** : les administrateurs peuvent s'envoyer des messages entre eux dans LiveChatAdmin (onglet "Admins"), avec indicateur de statut en ligne (vert/rouge)

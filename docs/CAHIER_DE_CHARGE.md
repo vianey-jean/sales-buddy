@@ -281,12 +281,14 @@ Gestion automatique des fournisseurs lors de l'ajout de produits et d'achats en 
 ### Paramètres (Admin)
 | Fonctionnalité | Description |
 |----------------|-------------|
-| Sauvegarde | Chiffrement AES-256 + téléchargement JSON (scan dynamique de toute la BDD) |
+| Sauvegarde manuelle | Chiffrement AES-256 + téléchargement JSON (scan dynamique de toute la BDD) |
+| Sauvegarde automatique | Compte à rebours 5 min après modification, contrôle arrêt/relance persisté |
 | Restauration | Injection de données depuis fichier chiffré |
 | Suppression totale | Réinitialisation complète (admin principale uniquement, 1 tentative) |
 | Gestion des rôles | Promouvoir/rétrograder des utilisateurs (admin principale) |
-| Modules | Configuration par module (commandes, pointage, tâches, notes) |
+| Gestion spécification | Attribuer la spécification "live" à un admin pour le chat en direct (admin principale) |
+| Modules | Configuration par module (pointage, tâches) |
 | Indisponibilités | Gestion des congés et absences |
 
 ### Base de données
-- `server/db/users.json`, `server/db/settings.json`, `server/db/moduleSettings.json`, `server/db/indisponible.json`
+- `server/db/users.json`, `server/db/settings.json`, `server/db/moduleSettings.json`, `server/db/indisponible.json`, `server/db/auto-sauvegarde.json`, `server/db/admin-messages.json`

@@ -1042,13 +1042,78 @@ GET    /api/settings                → Récupérer les paramètres + isAdmin
 PUT    /api/settings                → Modifier les paramètres (admin requis)
 GET    /api/settings/users          → Liste des utilisateurs (admin principale)
 PUT    /api/settings/user-role      → Changer le rôle d'un utilisateur (admin principale)
+PUT    /api/settings/user-specification → Changer la spécification d'un admin (admin principale)
 POST   /api/settings/backup         → Sauvegarder toutes les données (encryptionCode requis, min 6 chars)
+POST   /api/settings/auto-backup    → Sauvegarde automatique (encryptionPassword requis)
 POST   /api/settings/restore        → Restaurer des données (encryptedData + decryptionCode)
 POST   /api/settings/delete-all     → Supprimer toutes les données (password requis, admin principale)
 POST   /api/settings/verify-password → Vérifier le mot de passe admin
+GET    /api/settings/auto-sauvegarde → Statut de l'auto-sauvegarde (true/false)
+PUT    /api/settings/auto-sauvegarde → Activer/désactiver l'auto-sauvegarde
 ```
+
+### PUT `/api/settings/user-specification`
+🔒 **Admin principale** — Modifier la spécification d'un administrateur
+
+**Request Body :**
+```json
+{
+  "userId": "string",
+  "specification": "live | ''"
+}
+```
+Un admin avec `specification: "live"` peut recevoir les messages du chat en direct si l'admin principale n'est pas connecté.
+
+### GET/PUT `/api/settings/auto-sauvegarde`
+🔒 **Admin** — Contrôle de la sauvegarde automatique
+
+**Base de données** : `server/db/auto-sauvegarde.json`
+```json
+{ "autoSauvegarde": true }
+```
+- `true` : la sauvegarde automatique est active (par défaut)
+- `false` : la sauvegarde automatique est désactivée (le compte à rebours ne se déclenche pas)
+- L'état persiste entre les sessions (survit à la déconnexion/reconnexion)
+- La sauvegarde manuelle reste fonctionnelle même quand l'auto-backup est arrêté
+
+### POST `/api/settings/auto-backup`
+🔒 **Admin** — Sauvegarde automatique avec mot de passe utilisateur
+
+**Request Body :**
+```json
+{ "encryptionPassword": "string" }
+```
+Le mot de passe est vérifié via bcrypt puis utilisé comme code de chiffrement AES-256.
 
 ### Notes importantes
 - La sauvegarde/restauration scanne dynamiquement tous les fichiers `.json` dans `server/db/`
 - Les nouveaux fichiers de base de données sont automatiquement inclus dans les sauvegardes
 - La suppression réinitialise chaque fichier (tableau vide ou objet vide selon le type), tout en préservant le compte admin principale
+- La spécification "live" est enregistrée dans `users.json` et détermine le routage des messages du chat en direct
+
+---
+
+## 💬 Messagerie Admin-to-Admin
+
+### Endpoints
+```
+GET    /api/messagerie/admin-users           → Liste des admins avec statut en ligne
+GET    /api/messagerie/admin-conversations/:id → Conversations admin-to-admin
+GET    /api/messagerie/admin-messages/:visitorId/:adminId → Messages entre deux admins
+POST   /api/messagerie/admin-send            → Envoyer un message entre admins
+PUT    /api/messagerie/admin-mark-read/:visitorId/:adminId → Marquer comme lu
+```
+
+### Structure d'un message admin
+```json
+{
+  "id": "admin_msg_123",
+  "fromAdminId": "1",
+  "toAdminId": "2",
+  "contenu": "Bonjour",
+  "date": "2026-03-27T10:00:00Z",
+  "lu": false
+}
+```
+
+### Base de données : `server/db/admin-messages.json`
